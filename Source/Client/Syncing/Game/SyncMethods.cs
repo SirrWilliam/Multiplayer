@@ -33,6 +33,7 @@ namespace Multiplayer.Client
                 .SetPostInvoke((pawn, _) => ((Pawn)pawn).babyNamingDeadline = -1); // If a newborn was named then mark it as no longer needing to be named
             SyncMethod.Register(typeof(StorageSettings), nameof(StorageSettings.Priority));
             SyncMethod.Register(typeof(CompForbiddable), nameof(CompForbiddable.Forbidden));
+            SyncMethod.Register(typeof(CompTargetable), nameof(CompTargetable.SelectedUseOption));
 
             SyncMethod.Register(typeof(Pawn_TimetableTracker), nameof(Pawn_TimetableTracker.SetAssignment));
             SyncMethod.Register(typeof(Pawn_WorkSettings), nameof(Pawn_WorkSettings.SetPriority));
