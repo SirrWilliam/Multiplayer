@@ -64,6 +64,7 @@ public static class MpSettingsUI
 
         listing.CheckboxLabeled("MpShowPlayerCursors".Translate(), ref settings.showCursors);
         DoHideOtherPlayersInColonistBarField(settings, listing);
+        listing.CheckboxLabeled("MpHideOtherPlayersMessages".Translate(), ref settings.hideOtherPlayersMessages);
         listing.CheckboxLabeled("MpPlayerCursorTransparency".Translate(), ref settings.transparentPlayerCursors);
         listing.CheckboxLabeled("MpAutoAcceptSteam".Translate(), ref settings.autoAcceptSteam,
             "MpAutoAcceptSteamDesc".Translate());
