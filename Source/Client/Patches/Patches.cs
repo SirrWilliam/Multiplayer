@@ -37,7 +37,7 @@ namespace Multiplayer.Client
             {
                 yield return inst;
 
-                if (inst.operand == FrameCountField)
+                if (inst.operand as MethodInfo == FrameCountField)
                 {
                     yield return new CodeInstruction(OpCodes.Ldarg_0);
                     yield return new CodeInstruction(OpCodes.Call, FrameCountReplacementMethod);

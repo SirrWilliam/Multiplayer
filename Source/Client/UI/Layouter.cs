@@ -6,6 +6,7 @@ using Verse;
 
 namespace Multiplayer.Client;
 
+#nullable enable
 public static class Layouter
 {
     #region Data

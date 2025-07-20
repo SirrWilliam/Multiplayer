@@ -93,6 +93,8 @@ namespace Multiplayer.Client
         public static ISyncField SyncActivityCompTarget;
         public static ISyncField SyncActivityCompSuppression;
 
+        public static ISyncField SyncCompRefuelableValue;
+
         public static void Init()
         {
             SyncMedCare = Sync.Field(typeof(Pawn), nameof(Pawn.playerSettings), nameof(Pawn_PlayerSettings.medCare));
@@ -227,6 +229,8 @@ namespace Multiplayer.Client
             SyncActivityGizmoTarget = Sync.Field(typeof(ActivityGizmo), nameof(ActivityGizmo.targetValuePct)).SetBufferChanges();
             SyncActivityCompTarget = Sync.Field(typeof(CompActivity), nameof(CompActivity.suppressIfAbove)).SetBufferChanges();
             SyncActivityCompSuppression = Sync.Field(typeof(CompActivity), nameof(CompActivity.suppressionEnabled));
+
+            SyncCompRefuelableValue = Sync.Field(typeof(CompRefuelable), nameof(CompRefuelable.allowAutoRefuel)).SetBufferChanges();
         }
 
         [MpPrefix(typeof(StorytellerUI), nameof(StorytellerUI.DrawStorytellerSelectionInterface))]
@@ -590,6 +594,11 @@ namespace Multiplayer.Client
                 var comp = activityGizmo.Comp;
                 SyncActivityCompTarget.Watch(comp);
                 SyncActivityCompSuppression.Watch(comp);
+            }
+            else if (__instance is Gizmo_SetFuelLevel fuelGizmo)
+            {
+                var refuelable = fuelGizmo.refuelable;
+                SyncCompRefuelableValue.Watch(refuelable);
             }
         }
 

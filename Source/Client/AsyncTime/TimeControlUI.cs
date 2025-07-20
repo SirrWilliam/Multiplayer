@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Emit;
 using HarmonyLib;
 using Multiplayer.Client.Util;
@@ -36,12 +37,12 @@ public static class TimeControlPatch
     {
         foreach (var inst in insts)
         {
-            if (inst.operand == AccessTools.Method(typeof(TimeControls), nameof(TimeControls.DoTimeControlsGUI)))
+            if (inst.operand as MethodInfo == AccessTools.Method(typeof(TimeControls), nameof(TimeControls.DoTimeControlsGUI)))
                 inst.operand = AccessTools.Method(typeof(TimeControlPatch), nameof(DoTimeControlsGUI));
 
             yield return inst;
 
-            if (inst.operand == AccessTools.Constructor(typeof(Rect),
+            if (inst.operand as MethodInfo == AccessTools.Constructor(typeof(Rect),
                     new[] { typeof(float), typeof(float), typeof(float), typeof(float) }))
             {
                 yield return new CodeInstruction(OpCodes.Ldloca_S, 1);
@@ -360,7 +361,7 @@ public static class ColonistBarTimeControl
                 }
                 else
                 {
-                    // There is a new blocking pause 
+                    // There is a new blocking pause
                     flashDict.Add(flashPos, Time.time);
                 }
             }
@@ -416,7 +417,7 @@ public static class ColonistBarTimeControl
         // Only flash at flashInterval from the time the blocking pause began
         if (pauseDuration > 0f && pauseDuration % flashInterval < 1f)
         {
-             GenUI.DrawFlash(pos.x, pos.y, UI.screenWidth * 0.6f, Pulser.PulseBrightness(1f, 1f, pauseDuration) * 0.4f, flashColor);
+            GenUI.DrawFlash(pos.x, pos.y, UI.screenWidth * 0.6f, Pulser.PulseBrightness(1f, 1f, pauseDuration) * 0.4f, flashColor);
         }
     }
 }
