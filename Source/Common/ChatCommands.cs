@@ -4,7 +4,7 @@
     {
         public bool requiresHost;
 
-        public MultiplayerServer Server => MultiplayerServer.instance;
+        public MultiplayerServer Server => MultiplayerServer.instance!;
 
         public abstract void Handle(IChatSource source, string[] args);
 
