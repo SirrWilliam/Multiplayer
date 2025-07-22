@@ -1,4 +1,4 @@
-﻿namespace Multiplayer.Common;
+namespace Multiplayer.Common;
 
 public enum Packets : byte
 {
@@ -51,6 +51,7 @@ public enum Packets : byte
     Server_Notification,
     Server_TimeControl,
     Server_Chat,
+    Server_ChatHistory,
     Server_PlayerList,
     Server_KeepAlive,
     Server_SyncInfo,

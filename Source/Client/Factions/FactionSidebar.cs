@@ -3,6 +3,7 @@ using Multiplayer.Client.Util;
 using Multiplayer.Common;
 using RimWorld;
 using RimWorld.Planet;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,7 +17,7 @@ namespace Multiplayer.Client
     {
         private static SidebarTabs currentTab = SidebarTabs.CreateFaction;
 
-        private static string factionNameTextField;
+        private static string factionNameTextField = NameGenerator.GenerateName(Faction.OfPlayer.def.factionNameMaker, new Predicate<string>(NamePlayerFactionDialogUtility.IsValidName), false, null, null, null);
         private static Color factionColor = new Color32(0x00, 0xBC, 0xD8, 255);
         private static bool setupNextMapFromTickZero;
         private static ScenarioDef chosenScenario = ScenarioDefOf.Crashlanded;

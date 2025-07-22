@@ -1,4 +1,4 @@
-﻿namespace Multiplayer.Common
+namespace Multiplayer.Common.Networking.Chat
 {
     public abstract class ChatCmdHandler
     {
@@ -10,7 +10,7 @@
 
         public void SendNoPermission(ServerPlayer player)
         {
-            player.SendChat("You don't have permission.");
+            player.SendMessage("You don't have permission.");
         }
 
         public ServerPlayer? FindPlayer(string username)
@@ -29,7 +29,7 @@
         public override void Handle(IChatSource source, string[] args)
         {
             if (!Server.worldData.TryStartJoinPointCreation(true))
-                source.SendMsg("Join point creation already in progress.");
+                source.SendMessage("Join point creation already in progress.");
         }
     }
 
@@ -44,20 +44,20 @@
         {
             if (args.Length < 1)
             {
-                source.SendMsg("No username provided.");
+                source.SendMessage("No username provided.");
                 return;
             }
 
             var toKick = FindPlayer(args[0]);
             if (toKick == null)
             {
-                source.SendMsg("Couldn't find the player.");
+                source.SendMessage("Couldn't find the player.");
                 return;
             }
 
             if (toKick.IsHost)
             {
-                source.SendMsg("You can't kick the host.");
+                source.SendMessage("You can't kick the host.");
                 return;
             }
 

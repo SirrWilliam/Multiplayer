@@ -9,6 +9,7 @@ using Multiplayer.Client.Factions;
 using Multiplayer.Client.Util;
 using UnityEngine;
 using Verse;
+using Multiplayer.Common.Networking.Chat;
 
 namespace Multiplayer.Client
 {
@@ -274,7 +275,7 @@ namespace Multiplayer.Client
 
             GUI.SetNextControlName("chat_input");
             currentMsg = Widgets.TextField(textField, currentMsg);
-            currentMsg = currentMsg.Substring(0, Math.Min(currentMsg.Length, ServerPlayingState.MaxChatMsgLength));
+            currentMsg = currentMsg.Substring(0, Math.Min(currentMsg.Length, ChatManager.MaxChatMsgLength));
 
             Widgets.BeginScrollView(outRect, ref chatScroll, viewRect);
 
@@ -283,18 +284,18 @@ namespace Multiplayer.Client
 
             int i = 0;
 
-            foreach (ChatMsg msg in Multiplayer.session.messages)
+            foreach (ChatMessageData msg in Multiplayer.session.messages)
             {
-                float height = Text.CalcHeight(msg.Msg, width - 20f);
-                float textWidth = Text.CalcSize(msg.Msg).x + 15;
+                float height = Text.CalcHeight(msg.Message, width - 20f);
+                float textWidth = Text.CalcSize($"{msg.PlayerName}: "+msg.Message).x + 15;
                 Rect msgRect = new Rect(20f, yPos, width - 20f, height);
 
                 if (Mouse.IsOver(msgRect))
                 {
                     GUI.DrawTexture(msgRect, SelectedMsg);
 
-                    if (msg.TimeStamp != null)
-                        TooltipHandler.TipRegion(msgRect, msg.TimeStamp.ToString("yyyy-MM-dd HH:mm"));
+                    if (msg.CreatedTimeStamp != null)
+                        TooltipHandler.TipRegion(msgRect, msg.CreatedTimeStamp.ToString("yyyy-MM-dd HH:mm"));
                 }
 
                 Color cursorColor = GUI.skin.settings.cursorColor;
@@ -303,19 +304,8 @@ namespace Multiplayer.Client
                 msgRect.width = Math.Min(textWidth, msgRect.width);
                 bool mouseOver = Mouse.IsOver(msgRect);
 
-                if (mouseOver && msg.Clickable)
-                    GUI.color = new Color(0.8f, 0.8f, 1);
-
                 GUI.SetNextControlName("chat_msg_" + i++);
-                Widgets.TextArea(msgRect, msg.Msg, true);
-
-                if (mouseOver && msg.Clickable)
-                {
-                    GUI.color = Color.white;
-
-                    if (Event.current.type == EventType.MouseUp)
-                        msg.Click();
-                }
+                Widgets.TextArea(msgRect, msg.Message, true);
 
                 GUI.skin.settings.cursorColor = cursorColor;
 
@@ -361,7 +351,7 @@ namespace Multiplayer.Client
             else if (Multiplayer.Client == null)
                 Multiplayer.session.AddMsg(Multiplayer.username + ": " + currentMsg);
             else
-                Multiplayer.Client.Send(Packets.Client_Chat, currentMsg);
+                ClientUtil.SendMessage(currentMsg);
 
             currentMsg = "";
         }
@@ -475,47 +465,4 @@ namespace Multiplayer.Client
                 chatWindow.SetSizeTo(Multiplayer.settings.chatRect, Multiplayer.settings.resolutionForChat);
         }
     }
-
-    public abstract class ChatMsg
-    {
-        public virtual bool Clickable => false;
-        public abstract string Msg { get; }
-        public virtual DateTime TimeStamp { get; }
-
-        public ChatMsg()
-        {
-            TimeStamp = DateTime.Now;
-        }
-
-        public virtual void Click() { }
-    }
-
-    public class ChatMsg_Text : ChatMsg
-    {
-        public override string Msg { get; }
-
-        public ChatMsg_Text(string msg)
-        {
-            this.Msg = msg;
-        }
-    }
-
-    public class ChatMsg_Url : ChatMsg
-    {
-        public override string Msg => url;
-        public override bool Clickable => true;
-
-        private string url;
-
-        public ChatMsg_Url(string url)
-        {
-            this.url = url;
-        }
-
-        public override void Click()
-        {
-            Application.OpenURL(url);
-        }
-    }
-
 }

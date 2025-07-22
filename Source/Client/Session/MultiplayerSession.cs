@@ -1,12 +1,13 @@
 using LiteNetLib;
 using Multiplayer.Client.Networking;
+using Multiplayer.Client.Util;
 using Multiplayer.Common;
+using Multiplayer.Common.Networking.Chat;
 using RimWorld;
 using Steamworks;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Multiplayer.Client.Util;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
@@ -50,7 +51,7 @@ namespace Multiplayer.Client
         public List<CSteamID> knownUsers = new();
 
         public const int MaxMessages = 200;
-        public List<ChatMsg> messages = new();
+        public List<ChatMessageData> messages = new();
         public bool hasUnread;
         public bool ghostModeCheckbox;
 
@@ -90,10 +91,10 @@ namespace Multiplayer.Client
 
         public void AddMsg(string msg, bool notify = true)
         {
-            AddMsg(new ChatMsg_Text(msg), notify);
+            AddMsg(new ChatMessageData(ChatMessageType.Local, msg), notify);
         }
 
-        public void AddMsg(ChatMsg msg, bool notify = true)
+        public void AddMsg(ChatMessageData msg, bool notify = true)
         {
             var window = ChatWindow.Opened;
 

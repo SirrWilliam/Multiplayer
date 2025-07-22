@@ -1,3 +1,4 @@
+using Multiplayer.Common.Networking.Chat;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -29,6 +30,7 @@ namespace Multiplayer.Common
 
         public WorldData worldData;
         public FreezeManager freezeManager;
+        public ChatManager chatManager;
         public CommandHandler commands;
         public PlayerManager playerManager;
         public LiteNetManager liteNet;
@@ -70,6 +72,7 @@ namespace Multiplayer.Common
 
             worldData = new WorldData(this);
             freezeManager = new FreezeManager(this);
+            chatManager = new ChatManager(this);
             commands = new CommandHandler(this);
             playerManager = new PlayerManager(this);
             liteNet = new LiteNetManager(this);
@@ -219,12 +222,6 @@ namespace Multiplayer.Common
             return playerManager.GetPlayer(id);
         }
 
-        public void SendChat(string msg)
-        {
-            ServerLog.Detail($"[Chat] {msg}");
-            SendToPlaying(Packets.Server_Chat, new object[] { msg });
-        }
-
         public void SendNotification(string key, params string[] args)
         {
             SendToPlaying(Packets.Server_Notification, new object[] { key, args });
@@ -249,13 +246,13 @@ namespace Multiplayer.Common
             if (handler != null)
             {
                 if (handler.requiresHost && source is ServerPlayer { IsHost: false })
-                    source.SendMsg("No permission");
+                    source.SendMessage("No permission");
                 else
                     handler.Handle(source, parts.SubArray(1));
             }
             else
             {
-                source.SendMsg("Invalid command");
+                source.SendMessage("Invalid command");
             }
         }
 

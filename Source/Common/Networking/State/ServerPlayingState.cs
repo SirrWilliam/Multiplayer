@@ -1,3 +1,4 @@
+using Multiplayer.Common.Networking.Chat;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -54,25 +55,24 @@ namespace Multiplayer.Common
             Server.commands.Send(cmd, Player.FactionId, mapId, extra, Player);
         }
 
-        public const int MaxChatMsgLength = 128;
 
         [PacketHandler(Packets.Client_Chat)]
         public void HandleChat(ByteReader data)
         {
-            string msg = data.ReadString();
-            msg = msg.Trim();
+            ChatMessageData chatMessageData = ChatMessageData.Deserialize(data);
 
-            // todo handle max length
-            if (msg.Length == 0) return;
+            if (chatMessageData.Message?.Length == 0) return;
 
-            if (msg[0] == '/')
+            if (chatMessageData.Message?[0] == '/')
             {
-                var cmd = msg.Substring(1);
+                var cmd = chatMessageData.Message.Substring(1);
                 Server.HandleChatCmd(Player, cmd);
             }
             else
             {
-                Server.SendChat($"{connection.username}: {msg}");
+                if (chatMessageData.Type == ChatMessageType.Player)
+                    Server.chatManager.messages.Add(chatMessageData);
+                Server.chatManager.SendChat(chatMessageData);
             }
         }
 

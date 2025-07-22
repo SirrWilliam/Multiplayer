@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -37,7 +37,7 @@ public class WorldData
         if (CreatingJoinPoint)
             return false;
 
-        Server.SendChat("Creating a join point...");
+        Server.chatManager.SendChat("Creating a join point...");
 
         Server.commands.Send(CommandType.CreateJoinPoint, ScheduledCommand.NoFaction, ScheduledCommand.Global, Array.Empty<byte>());
         tmpMapCmds = new Dictionary<int, List<byte[]>>();

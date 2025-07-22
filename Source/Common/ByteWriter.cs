@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
+using UnityEngine;
 
 namespace Multiplayer.Common
 {
@@ -81,6 +82,19 @@ namespace Multiplayer.Common
         {
             WritePrefixedBytes(s == null ? null : Encoding.UTF8.GetBytes(s));
             return this;
+        }
+
+        public virtual void WriteColor(Color c)
+        {
+            WriteFloat(c.r);
+            WriteFloat(c.g);
+            WriteFloat(c.b);
+            WriteFloat(c.a);
+        }
+
+        public virtual void WriteDateTime(DateTime dt)
+        {
+            WriteLong(dt.ToUniversalTime().Ticks);
         }
 
         public virtual void WriteEnum<T>(T value) where T : Enum

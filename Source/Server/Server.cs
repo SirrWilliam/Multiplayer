@@ -1,5 +1,6 @@
-﻿using System.IO.Compression;
+using System.IO.Compression;
 using Multiplayer.Common;
+using Multiplayer.Common.Networking.Chat;
 using Multiplayer.Common.Util;
 using Server;
 
@@ -104,7 +105,7 @@ static byte[] Compress(byte[] input)
 
 class ConsoleSource : IChatSource
 {
-    public void SendMsg(string msg)
+    public void SendMessage(string msg)
     {
         ServerLog.Log(msg);
     }

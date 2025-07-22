@@ -1,7 +1,9 @@
 using Ionic.Zlib;
 using Multiplayer.Common;
+using Multiplayer.Common.Networking.Chat;
 using RimWorld;
 using RimWorld.Planet;
+using Steamworks;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -104,8 +106,7 @@ namespace Multiplayer.Client
         [PacketHandler(Packets.Server_Chat)]
         public void HandleChat(ByteReader data)
         {
-            string msg = data.ReadString();
-            Multiplayer.session.AddMsg(msg);
+            Multiplayer.session.AddMsg(ChatMessageData.Deserialize(data));
         }
 
         [PacketHandler(Packets.Server_Cursor)]

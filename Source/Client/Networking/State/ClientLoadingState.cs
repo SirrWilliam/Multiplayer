@@ -1,9 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using Ionic.Zlib;
 using Multiplayer.Client.Saving;
 using Multiplayer.Common;
+using Multiplayer.Common.Networking.Chat;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.Remoting.Messaging;
+using UnityEngine;
 using Verse;
 
 namespace Multiplayer.Client;
@@ -126,6 +129,18 @@ public class ClientLoadingState(ConnectionBase connection) : ClientBaseState(con
         );
 
         Loader.ReloadGame(mapsToLoad, true, false);
+    }
+    [PacketHandler(Packets.Server_ChatHistory)]
+    public void HandleChatHistory(ByteReader packet)
+    {
+        int count = packet.ReadInt32();
+
+        for (int i = 0; i < count; i++)
+        {
+            ChatMessageData chatMessage = ChatMessageData.Deserialize(packet);
+            Log.Error(chatMessage.Message);
+            Multiplayer.session.AddMsg(chatMessage);
+        }
         connection.ChangeState(ConnectionStateEnum.ClientPlaying);
     }
 }

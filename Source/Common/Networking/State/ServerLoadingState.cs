@@ -1,5 +1,9 @@
-﻿using System.Collections.Generic;
+using ICSharpCode.SharpZipLib;
+using Multiplayer.Common.Networking.Chat;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using static Multiplayer.Client.MpReflection;
 
 namespace Multiplayer.Common;
 
@@ -15,6 +19,7 @@ public class ServerLoadingState : AsyncConnectionState
         await EndIfDead();
 
         SendWorldData();
+        SendChatData();
 
         connection.ChangeState(ConnectionStateEnum.ServerPlaying);
         Player.SendPlayerList();
@@ -69,5 +74,20 @@ public class ServerLoadingState : AsyncConnectionState
         connection.SendFragmented(Packets.Server_WorldData, packetData);
 
         ServerLog.Log("World response sent: " + packetData.Length);
+
+    }
+
+    public void SendChatData()
+    {
+        ByteWriter writer = new ByteWriter();
+
+        var orderedMessages = Server.chatManager.messages.OrderBy(m => m.CreatedTimeStamp).ToList();
+        writer.WriteInt32(orderedMessages.Count);  
+
+        foreach (var message in orderedMessages)
+        {
+            message.Serialize(writer);
+        }
+        connection.Send(Packets.Server_ChatHistory, writer.ToArray());       
     }
 }

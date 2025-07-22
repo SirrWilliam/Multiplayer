@@ -97,12 +97,12 @@ public static class MainTabWindow_QuestsDoRewardsPrefsButtonPatch
             __result = rect;
             return true;
         }
+
         rect.yMin = rect.yMax - 40f;
 
         float buttonHeight = 40f;
-
-        float rewardButtonWidth = rect.width * 0.5f - 5f;
-        float toggleButtonWidth = rect.width - rewardButtonWidth - 10f;
+        float rewardButtonWidth = rect.width - buttonHeight - 5f; // toggle button kare olacak
+        float toggleButtonSize = buttonHeight;
 
         Rect rewardRect = new Rect(rect.x, rect.yMax - buttonHeight, rewardButtonWidth, buttonHeight);
         Text.Font = GameFont.Small;
@@ -111,20 +111,34 @@ public static class MainTabWindow_QuestsDoRewardsPrefsButtonPatch
             Find.WindowStack.Add(new Dialog_RewardPrefsConfig());
         }
 
-        Rect toggleRect = new Rect(rewardRect.xMax + 10f, rewardRect.y, toggleButtonWidth, buttonHeight);
+        Rect toggleRect = new Rect(rewardRect.xMax + 5f, rewardRect.y, buttonHeight, buttonHeight);
         bool value = Multiplayer.settings.hideOtherPlayersQuests;
-        string label = value ? "MpHideQuestsOn".Translate() : "MpHideQuestsOff".Translate();
-        if (Widgets.ButtonText(toggleRect, label, true, true))
+
+        Widgets.DrawButtonGraphic(toggleRect);
+
+        if (Mouse.IsOver(toggleRect))
+            Widgets.DrawHighlight(toggleRect);
+
+        if (Widgets.ButtonInvisible(toggleRect))
         {
             Multiplayer.settings.hideOtherPlayersQuests = !value;
-            SoundDefOf.Tick_High.PlayOneShotOnCamera();
+            if (Multiplayer.settings.hideOtherPlayersQuests)
+                SoundDefOf.Tick_High.PlayOneShotOnCamera();
+            else
+                SoundDefOf.Tick_Low.PlayOneShotOnCamera();
         }
-        TooltipHandler.TipRegion(toggleRect, "MpHideQuestsDesc".Translate());
+
+        // İkon çizimi (senin ikonunla değiştir)
+        Texture2D icon = value ? MultiplayerStatic.MyQuestsIcon : MultiplayerStatic.AllQuestsIcon;
+        GUI.DrawTexture(toggleRect.ContractedBy(6f), icon, ScaleMode.ScaleToFit);
+
+        TooltipHandler.TipRegion(toggleRect, (value ? "MpHideQuestsOn".Translate() : "MpHideQuestsOff".Translate()) + "\n" + "MpHideQuestsDesc".Translate());
 
         __result = rect;
         return false;
     }
 }
+
 
 [HarmonyPatch(typeof(ColonistBar), nameof(ColonistBar.CheckRecacheEntries))]
 public static class ColonistBarCheckRecacheEntriesPatch

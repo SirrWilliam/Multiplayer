@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
+using static Multiplayer.Client.MpReflection;
 
 namespace Multiplayer.Common
 {
@@ -99,7 +100,7 @@ namespace Multiplayer.Common
                 // }
 
                 server.SendNotification("MpPlayerDisconnected", conn.username);
-                server.SendChat($"{conn.username} has left.");
+                server.chatManager.SendChat($"{conn.username} has left.");
 
                 server.SendToPlaying(Packets.Server_PlayerList, new object[] { PlayerListAction.Remove, player.id });
 
@@ -146,7 +147,7 @@ namespace Multiplayer.Common
                 server.worldData.spectatorFactionId;
 
             server.SendNotification("MpPlayerConnected", player.Username);
-            server.SendChat($"{player.Username} has joined.");
+            server.chatManager.SendChat($"{player.Username} has joined.");
 
             if (!player.IsArbiter)
             {

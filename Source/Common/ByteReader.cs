@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using UnityEngine;
 
 namespace Multiplayer.Common
 {
@@ -134,6 +135,21 @@ namespace Multiplayer.Common
             for (int i = 0; i < len; i++)
                 result[i] = ReadString();
             return result;
+        }
+
+        public virtual Color ReadColor()
+        {
+            float r = ReadFloat();
+            float g = ReadFloat();
+            float b = ReadFloat();
+            float a = ReadFloat();
+            return new Color(r, g, b, a);
+        }
+
+        public virtual DateTime ReadDateTime()
+        {
+            long ticks = ReadLong();
+            return new DateTime(ticks, DateTimeKind.Utc).ToLocalTime();
         }
 
         public virtual T ReadEnum<T>() where T : Enum

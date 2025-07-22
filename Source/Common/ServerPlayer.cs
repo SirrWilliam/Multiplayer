@@ -1,3 +1,4 @@
+using Multiplayer.Common.Networking.Chat;
 using System;
 using System.Diagnostics;
 using System.Linq;
@@ -74,9 +75,15 @@ namespace Multiplayer.Common
             Server.playerManager.SetDisconnected(conn, reason);
         }
 
-        public void SendChat(string msg)
+        public void SendMessage(string msg)
         {
-            SendPacket(Packets.Server_Chat, new object[] { msg });
+            SendMessage(new ChatMessageData(ChatMessageType.Server, msg));
+        }
+        public void SendMessage(ChatMessageData msg)
+        {
+            var writer = new ByteWriter();
+            msg.Serialize(writer);
+            SendPacket(Packets.Server_Chat, writer.ToArray());
         }
 
         public void SendKeepAlivePacket()
@@ -156,11 +163,6 @@ namespace Multiplayer.Common
                 ByteWriter.GetBytes(TimeVote.PlayerResetGlobal, -1),
                 fauxSource: this
             );
-        }
-
-        public void SendMsg(string msg)
-        {
-            SendChat(msg);
         }
     }
 

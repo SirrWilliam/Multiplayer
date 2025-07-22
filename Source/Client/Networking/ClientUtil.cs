@@ -1,9 +1,13 @@
 using LiteNetLib;
+using Multiplayer.Client.Networking;
 using Multiplayer.Common;
+using Multiplayer.Common.Networking.Chat;
 using Steamworks;
 using System;
+using System.Linq;
+using UnityEngine;
 using Verse;
-using Multiplayer.Client.Networking;
+using static Mono.Security.X509.X520;
 
 namespace Multiplayer.Client
 {
@@ -64,6 +68,24 @@ namespace Multiplayer.Client
                 ConnectionStatusListeners.TryNotifyAll_Disconnected();
                 Multiplayer.StopMultiplayer();
             }
+        }
+
+        public static void SendMessage(string message)
+        {
+            PlayerInfo player = Multiplayer.session.players.Find(p => p.Id == Multiplayer.session.playerId);
+            string playerName = player?.Username ?? "Unknown";
+            var faction = Find.FactionManager.AllFactions.FirstOrDefault(f => f.loadID == player?.factionId);
+            bool isSpectator = faction == Multiplayer.WorldComp.spectatorFaction;
+            Color playerColor = isSpectator ? Color.white : (faction?.Color ?? Color.white);
+
+            SendMessage(new ChatMessageData(ChatMessageType.Player, message, playerName,playerColor ));
+        }
+
+        public static void SendMessage(ChatMessageData msg)
+        {
+            var writer = new ByteWriter();
+            msg.Serialize(writer);
+            Multiplayer.Client.Send(Packets.Client_Chat, writer.ToArray());
         }
     }
 
