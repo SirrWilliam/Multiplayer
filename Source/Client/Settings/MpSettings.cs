@@ -4,6 +4,7 @@ using Multiplayer.Client.Saving;
 using Multiplayer.Common;
 using UnityEngine;
 using Verse;
+using static Multiplayer.Client.HoverChat;
 
 namespace Multiplayer.Client
 {
@@ -32,6 +33,8 @@ namespace Multiplayer.Client
 
         public bool hideOtherPlayersInColonistBar = false;
         public bool hideOtherPlayersQuests = false;
+        public bool disableHoverChat = false;
+        public ChatVisibilityMode chatVisibilityMode = ChatVisibilityMode.OnMessage;
 
 
         internal static readonly ColorRGBClient[] DefaultPlayerColors =
@@ -72,7 +75,8 @@ namespace Multiplayer.Client
             Scribe_Values.Look(ref transparentPlayerCursors, "transparentPlayerCursors", true);
             Scribe_Values.Look(ref hideOtherPlayersInColonistBar, "hideOtherPlayersInColonistBar", false);
             Scribe_Values.Look(ref hideOtherPlayersQuests, "hideOtherPlayersQuests", false);
-
+            Scribe_Values.Look(ref disableHoverChat, "disableHoverChat", false);
+            Scribe_Values.Look(ref chatVisibilityMode, "chatVisibilityMode", ChatVisibilityMode.OnMessage);
 
             Scribe_Collections.Look(ref playerColors, "playerColors", LookMode.Deep);
             if (playerColors.NullOrEmpty())

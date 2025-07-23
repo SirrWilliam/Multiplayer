@@ -78,6 +78,8 @@ public static class FactionCreator
                     Multiplayer.session.playerId,
                     newFaction.loadID
                 );
+
+                FactionSidebar.Reset();
             }
         }, "GeneratingMap", doAsynchronously: true, GameAndMapInitExceptionHandlers.ErrorWhileGeneratingMap);
     }

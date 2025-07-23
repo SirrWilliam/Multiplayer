@@ -5,8 +5,6 @@ using Multiplayer.Common.Networking.Chat;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Remoting.Messaging;
-using UnityEngine;
 using Verse;
 
 namespace Multiplayer.Client;
@@ -133,6 +131,9 @@ public class ClientLoadingState(ConnectionBase connection) : ClientBaseState(con
     [PacketHandler(Packets.Server_ChatHistory)]
     public void HandleChatHistory(ByteReader packet)
     {
+        Multiplayer.session.AddMsg("If you are having any issues with the mod and would like some help resolving them, then please reach out to us on our Discord server:", false);
+        Multiplayer.session.AddMsg("https://discord.gg/S4bxXpv", false);
+
         int count = packet.ReadInt32();
 
         for (int i = 0; i < count; i++)

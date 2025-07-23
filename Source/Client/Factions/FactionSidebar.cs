@@ -449,6 +449,13 @@ namespace Multiplayer.Client
             };
         }
 
+        public static void Reset()
+        {
+           factionNameTextField = NameGenerator.GenerateName(Faction.OfPlayer.def.factionNameMaker, new Predicate<string>(NamePlayerFactionDialogUtility.IsValidName), false, null, null, null);
+           factionColor = new Color32(0x00, 0xBC, 0xD8, 255);
+           chosenScenario = ScenarioDefOf.Crashlanded;
+        }
+
         private static List<ThingDefCount> GetStartingPossessions(List<Pawn> startingPawns)
         {
             Dictionary<Pawn, List<ThingDefCount>> allPossessions = Find.GameInitData.startingPossessions;

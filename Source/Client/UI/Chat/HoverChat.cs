@@ -13,6 +13,7 @@ namespace Multiplayer.Client
         private const float ScrollbarWidth = 6f;
         private const float TextBoxHeight = 30f;
 
+        public static ChatVisibilityMode ChatVisibility = Multiplayer.settings.chatVisibilityMode;
         public static float CurrentAlpha { get; private set; }
         public static bool IsVisible => CurrentAlpha > 0f;
         public static bool IsTyping = false;
@@ -25,15 +26,35 @@ namespace Multiplayer.Client
         private static bool hasBeenFocused = false;
         private static int lastMessageCount = 0;
 
+        public enum ChatVisibilityMode
+        {
+            OnMessage,   // 
+            Hidden,      //
+            Always       //
+        }
+
         public static void Update()
         {
-            if ((fadeTimer > 0f) && !IsTyping){
-                fadeTimer -= Time.deltaTime;
+
+            if (Event.current.type == EventType.KeyUp && Event.current.keyCode == KeyCode.K)
+            {
+                int next = ((int)ChatVisibility + 1) % Enum.GetValues(typeof(ChatVisibilityMode)).Length;
+                Multiplayer.settings.chatVisibilityMode = (ChatVisibilityMode)next;
+                ChatVisibility = Multiplayer.settings.chatVisibilityMode;
+                Messages.Message($"Chat visibility set to {ChatVisibility}", MessageTypeDefOf.CautionInput,false);
+
             }
+
 
             if (Event.current.type is EventType.KeyUp && Event.current.keyCode == KeyCode.Escape) {
                 IsTyping = false;
-                Show();
+                if (ChatVisibility != ChatVisibilityMode.Hidden) {
+                    Show();
+                }
+                else
+                {
+                    fadeTimer = 0f;
+                }
             }
 
             if (Event.current.type is EventType.KeyUp && Event.current.keyCode == KeyCode.Return)
@@ -52,11 +73,28 @@ namespace Multiplayer.Client
                 Show();
               }*/
 
-            int MessageCount = Multiplayer.session.messages.Count;
-            if (lastMessageCount != MessageCount)
+            if (ChatVisibility != ChatVisibilityMode.Hidden) {
+                int MessageCount = Multiplayer.session.messages.Count;
+                if (lastMessageCount != MessageCount)
+                {
+                    lastMessageCount = MessageCount;
+                    Show();
+                }
+            }
+
+            if (ChatVisibility != ChatVisibilityMode.Always) {
+                if ((fadeTimer > 0f) && !IsTyping)
+                {
+                    fadeTimer -= Time.deltaTime;
+                }
+            }
+            else if (ChatVisibility == ChatVisibilityMode.Hidden)
             {
-                lastMessageCount = MessageCount;
-                Show();
+                fadeTimer = 0f;
+            }
+            else
+            {
+                fadeTimer = MaxFadeTime;
             }
 
             CurrentAlpha = Mathf.Clamp01(fadeTimer / 2f);
@@ -127,19 +165,37 @@ namespace Multiplayer.Client
                     && Event.current.keyCode == KeyCode.Return
                     && GUI.GetNameOfFocusedControl() == "CustomChatInput")
                 {
-                    SendMessage();
-                    currentInput = "";
-                    IsTyping = false;
-                    Show();
+           
                     Event.current.Use();
+                    SendMessage();
+                    if (ChatVisibility != ChatVisibilityMode.Hidden)
+                    {
+                        currentInput = "";
+                        IsTyping = false;
+                        Show();
+                    }
+                    else
+                    {
+                        currentInput = "";
+                        IsTyping = false;
+                        fadeTimer = 0f;
+                    }
                 }
                 if (Event.current.type is EventType.KeyUp
                && Event.current.keyCode == KeyCode.Escape
                && GUI.GetNameOfFocusedControl() == "CustomChatInput")
-                {
-                    IsTyping = false;
-                    Show();
+                {       
                     Event.current.Use();
+                    if (ChatVisibility != ChatVisibilityMode.Hidden)
+                    {
+                        IsTyping = false;
+                        Show();
+                    }
+                    else
+                    {
+                        IsTyping = false;
+                        fadeTimer = 0f;
+                    }
                 }
 
             }
@@ -263,25 +319,29 @@ namespace Multiplayer.Client
             if (Multiplayer.Client == null)
                 return;
 
-            HoverChat.Update();
+           if(!Multiplayer.settings.disableHoverChat)
+           {
+                HoverChat.Update();
 
-            if (!HoverChat.IsVisible) {
-                return;
+                if (!HoverChat.IsVisible)
+                {
+                    return;
+                }
+
+                Rect winRect = new Rect(MarginX, MarginY, WindowWidth, WindowHeight);
+                Find.WindowStack.ImmediateWindow(
+                     "MpChatWindow".GetHashCode(),
+                     winRect,
+                     WindowLayer.Super,
+                     () =>
+                     {
+                         HoverChat.DoHoverChatContents(winRect);
+                     },
+                     doBackground: false,
+                     shadowAlpha: 0
+
+                 );
             }
-
-            Rect winRect = new Rect(MarginX, MarginY, WindowWidth, WindowHeight);
-            Find.WindowStack.ImmediateWindow(
-                 "MpChatWindow".GetHashCode(),
-                 winRect,
-                 WindowLayer.Super,
-                 () =>
-                 {
-                     HoverChat.DoHoverChatContents(winRect);
-                 },
-                 doBackground: false,
-                 shadowAlpha: 0
-
-             );
         }
     }
 }
