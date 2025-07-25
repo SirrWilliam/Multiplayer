@@ -36,15 +36,13 @@ namespace Multiplayer.Client
         public static void Update()
         {
 
-            if (Event.current.type == EventType.KeyUp && Event.current.keyCode == KeyCode.K)
+            if (Event.current.type == EventType.KeyUp && Event.current.keyCode == Multiplayer.settings.changeHoverChatVisibility)
             {
                 int next = ((int)ChatVisibility + 1) % Enum.GetValues(typeof(ChatVisibilityMode)).Length;
                 Multiplayer.settings.chatVisibilityMode = (ChatVisibilityMode)next;
                 ChatVisibility = Multiplayer.settings.chatVisibilityMode;
                 Messages.Message($"Chat visibility set to {ChatVisibility}", MessageTypeDefOf.CautionInput,false);
-
             }
-
 
             if (Event.current.type is EventType.KeyUp && Event.current.keyCode == KeyCode.Escape) {
                 IsTyping = false;

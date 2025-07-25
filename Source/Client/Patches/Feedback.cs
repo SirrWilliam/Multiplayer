@@ -8,6 +8,7 @@ using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
+using Multiplayer.Client.Factions;
 
 namespace Multiplayer.Client.Patches
 {
@@ -86,14 +87,109 @@ namespace Multiplayer.Client.Patches
             return !CancelFeedbackNotTargetedAtMe.Cancel;
         }
     }
-
     [HarmonyPatch(typeof(Messages), nameof(Messages.Message), new[] { typeof(Message), typeof(bool) })]
+
     static class SilenceMessagesNotTargetedAtMe
     {
-        static bool Prefix(bool historical)
+        private static bool IsSpectator => Multiplayer.Client != null && Multiplayer.RealPlayerFaction == Multiplayer.WorldComp.spectatorFaction;
+
+        static bool Prefix(ref Message msg, bool historical)
         {
-            bool cancel = Multiplayer.Client != null && !historical && Multiplayer.ExecutingCmds && !TickPatch.currentExecutingCmdIssuedBySelf;
-            return !cancel;
+            if (Multiplayer.Client == null)
+                return true;
+
+            // Standard cancellation logic when multifaction is disabled / hideOtherPlayersMessages is true
+
+            if (!Multiplayer.GameComp.multifaction)
+            {
+                if (!historical && Multiplayer.ExecutingCmds && !TickPatch.currentExecutingCmdIssuedBySelf)
+                {
+                    return false;
+                }
+                return true;
+            }
+            else
+            {
+                // Cancellation logic during command execution when multifaction is enabled
+                if (Multiplayer.ExecutingCmds)
+                {
+                    if (!TickPatch.currentExecutingCmdIssuedBySelf)
+                        return false;
+
+                    return true;
+                }
+                if (Multiplayer.settings.hideOtherPlayersMessages || IsSpectator)
+                {
+                    // Inspect message targets
+                    var lookTargets = msg.lookTargets;
+
+                    if (lookTargets?.IsValid == true)
+                    {
+                        var target = lookTargets.PrimaryTarget;
+                        if (target.HasThing)
+                        {
+                            var map = target.Thing.Map;
+                            if (map != null)
+                            {
+                                if (map.ParentFaction != null && map.ParentFaction != Faction.OfPlayer)
+                                    return false;
+
+                                if (map.ParentFaction == Multiplayer.RealPlayerFaction)
+                                    return true;
+
+                                return false;
+                            }
+                        }
+                        else if (target.HasWorldObject)
+                        {
+                            return target.WorldObject.Faction == Multiplayer.RealPlayerFaction;
+                        }
+                        else if (target.IsMapTarget && target.Map != null && target.Map != Find.CurrentMap)
+                        {
+                            return false;
+                        }
+                    }
+
+                    // Quest affiliation check
+                    if (msg.quest != null)
+                    {
+                        // If quest has no specific player faction, show to everyone
+                        if (!msg.quest.TryGetPlayerFaction(out var faction))
+                            return true;
+
+                        // Otherwise only show if it belongs to the player
+                        if (faction != Faction.OfPlayer)
+                            return false;
+                    }
+         
+                    if (Faction.OfPlayer != Multiplayer.RealPlayerFaction)
+                    {
+                        foreach (var map in Find.Maps)
+                        {
+                            if (map.ParentFaction == Faction.OfPlayer && Find.CurrentMap == map)
+                                return true;
+                        }
+                        return false;
+                    }
+                }
+                else
+                {
+                    // Our own command message: add optional [YOU] tag and colored faction prefix
+                    if (historical)
+                    {
+                        var youTag = Faction.OfPlayer == Multiplayer.RealPlayerFaction ? "[YOU] " : string.Empty;
+                        var nameTag = $"[<color=#{ColorUtility.ToHtmlStringRGBA(Faction.OfPlayer.Color)}>{Faction.OfPlayer.Name}</color>] ";
+                        msg.text = msg.text.Insert(0, youTag + nameTag);
+                    }
+                }
+
+                // Allow non-historical messages
+                if (!historical)
+                    return true;
+
+                // Default: allow message
+                return true;
+            }
         }
     }
 

@@ -57,14 +57,11 @@ public static class MpSettingsUI
         var listing = new Listing_Standard();
         listing.Begin(inRect);
         listing.ColumnWidth = 270f;
-
         DoUsernameField(settings, listing);
         listing.TextFieldNumericLabeled("MpAutosaveSlots".Translate() + ":  ", ref settings.autosaveSlots, ref slotsBuffer, 1f,
             99f);
-
+        listing.CheckboxLabeled("MpDisableHoverChat".Translate(), ref settings.disableHoverChat);
         listing.CheckboxLabeled("MpShowPlayerCursors".Translate(), ref settings.showCursors);
-        DoHideOtherPlayersInColonistBarField(settings, listing);
-        listing.CheckboxLabeled("Disable Hover Chat", ref settings.disableHoverChat);
         listing.CheckboxLabeled("MpPlayerCursorTransparency".Translate(), ref settings.transparentPlayerCursors);
         listing.CheckboxLabeled("MpAutoAcceptSteam".Translate(), ref settings.autoAcceptSteam,
             "MpAutoAcceptSteamDesc".Translate());
@@ -74,7 +71,14 @@ public static class MpSettingsUI
             "MpShowModCompatDesc".Translate());
         listing.CheckboxLabeled("MpEnablePingsSetting".Translate(), ref settings.enablePings);
         listing.CheckboxLabeled("MpShowMainMenuAnimation".Translate(), ref settings.showMainMenuAnim);
+        using (MpStyle.Set(GameFont.Medium))
+            listing.Label("Multifaction");
+        listing.CheckboxLabeled("MpHideOtherPlayersMessages".Translate(), ref settings.hideOtherPlayersMessages);
+        DoHideOtherPlayersInColonistBarField(settings, listing);
+        listing.CheckboxLabeled("MpCustomHasMapColor".Translate(), ref settings.customHasMapColor);
 
+        using (MpStyle.Set(GameFont.Medium))
+            listing.Label("Controls");
         const string buttonOff = "Off";
 
         using (MpStyle.Set(TextAnchor.MiddleCenter))
@@ -85,11 +89,18 @@ public static class MpSettingsUI
         using (MpStyle.Set(TextAnchor.MiddleCenter))
             if (listing.ButtonTextLabeled("MpJumpToPingButtonSetting".Translate(),
                     settings.jumpToPingButton != null ? $"Mouse {settings.jumpToPingButton - (int)KeyCode.Mouse0 + 1}" : buttonOff))
-                Find.WindowStack.Add(
-                    new FloatMenu(new List<FloatMenuOption>(ButtonChooser(b => settings.jumpToPingButton = b))));
+                Find.WindowStack.Add(new FloatMenu(new List<FloatMenuOption>(ButtonChooser(b => settings.jumpToPingButton = b))));
+
+        using (MpStyle.Set(TextAnchor.MiddleCenter))
+            if (listing.ButtonTextLabeled("MpChangeHoverChatVisibility".Translate(),
+                    settings.changeHoverChatVisibility != null ? $"{settings.changeHoverChatVisibility - (int)KeyCode.K + 1}" : buttonOff))
+                Find.WindowStack.Add(new FloatMenu(new List<FloatMenuOption>(ButtonChooser(b => settings.changeHoverChatVisibility = b))));
 
         if (Prefs.DevMode)
         {
+            using (MpStyle.Set(GameFont.Medium))
+                listing.Label("Debug");
+
             listing.CheckboxLabeled("Show debug info", ref settings.showDevInfo);
             listing.TextFieldNumericLabeled("Desync radius:  ", ref settings.desyncTracesRadius, ref desyncRadiusBuffer, 1f,
                 200f);

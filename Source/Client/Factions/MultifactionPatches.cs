@@ -16,6 +16,85 @@ using static HarmonyLib.AccessTools;
 
 namespace Multiplayer.Client.Patches;
 
+[HarmonyPatch(typeof(ExpandableWorldObjectsUtility), nameof(ExpandableWorldObjectsUtility.ExpandableWorldObjectsOnGUI))]
+public static class ExpandableWorldObjectsUtilityPatch
+{
+    private static Color GetConditionalMapHighlight(Color baseColor, WorldObject wo)
+    {
+        if(Multiplayer.Client == null)
+            return baseColor;
+
+        if (Multiplayer.GameComp.multifaction && Multiplayer.settings.customHasMapColor)
+        {
+            var mapParent = wo as MapParent;
+            if (mapParent?.Faction != null && mapParent.Faction != Multiplayer.RealPlayerFaction && mapParent.Faction.IsPlayer)
+            {
+                switch (mapParent.Faction.RelationKindWith(Multiplayer.RealPlayerFaction))
+                {
+                    case FactionRelationKind.Hostile:
+                        return PawnNameColorUtility.ColorBaseHostile;
+                    case FactionRelationKind.Neutral:
+                        return PawnNameColorUtility.ColorBaseNeutral;
+                    case FactionRelationKind.Ally:
+                        return PawnNameColorUtility.ColorBaseNeutral;
+                    default:
+                        return baseColor;
+                }
+            }
+            else if (mapParent?.Faction != null && !mapParent.Faction.IsPlayer)
+            {
+                return Color.white;
+            }
+            else
+            {
+                return baseColor;
+            }
+        }
+        else
+        {
+            return baseColor;
+        }
+    }
+
+    static readonly FieldInfo originalHasMapColor = AccessTools.Field(
+        typeof(ExpandableWorldObjectsUtility),
+        nameof(ExpandableWorldObjectsUtility.HasMapColor)
+    );
+
+    static readonly MethodInfo getConditionalMapHighlight = AccessTools.Method(
+        typeof(ExpandableWorldObjectsUtilityPatch),
+        nameof(GetConditionalMapHighlight),
+        new[] { typeof(Color), typeof(WorldObject) }
+    );
+
+    static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+    {
+        var codes = new List<CodeInstruction>(instructions);
+        const int worldObjectLocalIndex = 3;
+
+        for (int i = 0; i < codes.Count; i++)
+        {
+            if (codes[i].opcode == OpCodes.Ldsfld && codes[i].operand as FieldInfo == originalHasMapColor)
+            {
+                // Replace: HasMapColor → GetConditionalMapHighlight(HasMapColor, worldObject)
+                codes.RemoveAt(i);
+                codes.InsertRange(i, new[]
+                {
+                    new CodeInstruction(OpCodes.Ldsfld, originalHasMapColor),
+                    new CodeInstruction(OpCodes.Ldloc_S, worldObjectLocalIndex),
+                    new CodeInstruction(OpCodes.Call, getConditionalMapHighlight),
+                });
+                break;
+            }
+        }
+
+        return codes;
+    }
+}
+
+
+
+
 [HarmonyPatch(typeof(MainTabWindow_Quests), nameof(MainTabWindow_Quests.DoRow))]
 public static class MainTabWindow_QuestsDoRowPatch
 {

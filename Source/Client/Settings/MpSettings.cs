@@ -30,11 +30,15 @@ namespace Multiplayer.Client
         public DesyncTracingMode desyncTracingMode = DesyncTracingMode.Fast;
         public bool transparentPlayerCursors = true;
         public List<ColorRGBClient> playerColors = new(DefaultPlayerColors);
-
-        public bool hideOtherPlayersInColonistBar = false;
-        public bool hideOtherPlayersQuests = false;
         public bool disableHoverChat = false;
         public ChatVisibilityMode chatVisibilityMode = ChatVisibilityMode.OnMessage;
+        public KeyCode? changeHoverChatVisibility = KeyCode.K;
+        //Multifaction
+        public bool hideOtherPlayersInColonistBar = false;
+        public bool hideOtherPlayersQuests = false;
+        public bool hideOtherPlayersMessages = false;
+        public bool customHasMapColor = false;
+
 
 
         internal static readonly ColorRGBClient[] DefaultPlayerColors =
@@ -75,8 +79,12 @@ namespace Multiplayer.Client
             Scribe_Values.Look(ref transparentPlayerCursors, "transparentPlayerCursors", true);
             Scribe_Values.Look(ref hideOtherPlayersInColonistBar, "hideOtherPlayersInColonistBar", false);
             Scribe_Values.Look(ref hideOtherPlayersQuests, "hideOtherPlayersQuests", false);
+            Scribe_Values.Look(ref hideOtherPlayersMessages, "hideOtherPlayersMessages", false);
             Scribe_Values.Look(ref disableHoverChat, "disableHoverChat", false);
             Scribe_Values.Look(ref chatVisibilityMode, "chatVisibilityMode", ChatVisibilityMode.OnMessage);
+            Scribe_Values.Look(ref changeHoverChatVisibility, "changeHoverChatVisibility", KeyCode.K);
+            Scribe_Values.Look(ref customHasMapColor, "customHasMapColor", false);
+
 
             Scribe_Collections.Look(ref playerColors, "playerColors", LookMode.Deep);
             if (playerColors.NullOrEmpty())
