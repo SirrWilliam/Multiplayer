@@ -13,9 +13,6 @@ namespace Multiplayer.Client;
 
 public static class MpSettingsWindow
 {
-
-    // Sınıfın içine, fonksiyonların dışına statik olarak ekleyin:
-    private static readonly System.Text.RegularExpressions.Regex OnlyNumber = new (@"^[1-9]\d*$");
     //
     private static Vector2 _scrollPosition = Vector2.zero;
     private static SettingsTabs _currentTab = SettingsTabs.General;
@@ -23,12 +20,10 @@ public static class MpSettingsWindow
     private static string _selectedDesc = null;
     private static Texture2D _selectedPreview = null;   // null = placeholder
     private static float _lastHoveredRow = -1f;
-    private static string slotsBuffer;
-    private static string desyncRadiusBuffer;
-    private static string jittedMethodsBuffer;
+
     //Scroll
     private static Vector2 _scrollPos = Vector2.zero;
-    private static float _totalContentH = 0f;        
+    private static float _totalContentH = 0f;
 
     //Layout Constants
     private const float TitleHeight = 36f;
@@ -102,28 +97,7 @@ public static class MpSettingsWindow
         DrawLeftPanel(settings, leftRect);
         DrawRightPanel(rightRect);
 
-        /*  var listing = new Listing_Standard();
-          listing.Begin(inRect);
-          listing.ColumnWidth = 270f;
-
-          DoUsernameField(settings, listing);
-          listing.TextFieldNumericLabeled("MpAutosaveSlots".Translate() + ":  ", ref settings.autosaveSlots, ref slotsBuffer, 1f,
-              99f);
-
-          listing.CheckboxLabeled("MpShowPlayerCursors".Translate(), ref settings.showCursors);
-          DoHideOtherPlayersInColonistBarField(settings, listing);
-          listing.CheckboxLabeled("MpPlayerCursorTransparency".Translate(), ref settings.transparentPlayerCursors);
-          listing.CheckboxLabeled("MpAutoAcceptSteam".Translate(), ref settings.autoAcceptSteam,
-              "MpAutoAcceptSteamDesc".Translate());
-          listing.CheckboxLabeled("MpTransparentChat".Translate(), ref settings.transparentChat);
-          listing.CheckboxLabeled("MpAppendNameToAutosave".Translate(), ref settings.appendNameToAutosave);
-          listing.CheckboxLabeled("MpShowModCompat".Translate(), ref settings.showModCompatibility,
-              "MpShowModCompatDesc".Translate());
-          listing.CheckboxLabeled("MpEnablePingsSetting".Translate(), ref settings.enablePings);
-          listing.CheckboxLabeled("MpEnableCrossPlanetLayerPings".Translate(), ref settings.enableCrossPlanetLayerPings,
-              "MpEnableCrossPlanetLayerPingsDesc".Translate());
-          listing.CheckboxLabeled("MpShowMainMenuAnimation".Translate(), ref settings.showMainMenuAnim);
-
+        /*  
           const string buttonOff = "Off";
 
           using (MpStyle.Set(TextAnchor.MiddleCenter))
@@ -136,47 +110,6 @@ public static class MpSettingsWindow
                       settings.jumpToPingButton != null ? $"Mouse {settings.jumpToPingButton - (int)KeyCode.Mouse0 + 1}" : buttonOff))
                   Find.WindowStack.Add(
                       new FloatMenu(new List<FloatMenuOption>(ButtonChooser(b => settings.jumpToPingButton = b))));
-
-          if (listing.ButtonText("Generate debug info"))
-          {
-              try
-              {
-                  Find.WindowStack.Add(new Dialog_AdvancedSettings());
-                  DebugInfoFile.Generate();
-              }
-              catch(Exception e)
-              {
-                  Log.Error($"Failed to generate debug info {e}");
-              }
-          }
-
-          if (VersionChecker.IsContinuousRelease || VersionChecker.IsLocalBuild)
-              listing.CheckboxLabeled("MpIncludeReplayInDesync".Translate(), ref settings.includeReplayInDesync);
-
-          if (Prefs.DevMode)
-          {
-              listing.CheckboxLabeled("Show debug info", ref settings.showDevInfo);
-              listing.TextFieldNumericLabeled("Desync radius:  ", ref settings.desyncTracesRadius, ref desyncRadiusBuffer, 1f,
-                  200f);
-              listing.TextFieldNumericLabeled("Jitted methods:  ", ref settings.jittedMethodsInDesync, ref jittedMethodsBuffer);
-
-              if (MpVersion.IsDebug && FileAssoc.IsSupported())
-              {
-                  if (FileAssoc.IsRegistered())
-                  {
-                      if (listing.ButtonText("Remove file associations")) FileAssoc.Remove();
-                  }
-                  else
-                  {
-                      if (listing.ButtonText("Register file associations")) FileAssoc.Register();
-                  }
-              }
-  #if DEBUG
-              using (MpStyle.Set(TextAnchor.MiddleCenter))
-                  if (listing.ButtonTextLabeled("Desync tracing mode", settings.desyncTracingMode.ToString()))
-                      settings.desyncTracingMode = settings.desyncTracingMode.Cycle();
-  #endif
-          }
 
           listing.End();
 
@@ -204,54 +137,34 @@ public static class MpSettingsWindow
 
         float y = 0f;
 
-        /*
-          listing.CheckboxLabeled("MpShowPlayerCursors".Translate(), ref settings.showCursors);
-          DoHideOtherPlayersInColonistBarField(settings, listing);
-          listing.CheckboxLabeled("MpPlayerCursorTransparency".Translate(), ref settings.transparentPlayerCursors);
-          listing.CheckboxLabeled("MpAutoAcceptSteam".Translate(), ref settings.autoAcceptSteam,
-              "MpAutoAcceptSteamDesc".Translate());
-          listing.CheckboxLabeled("MpTransparentChat".Translate(), ref settings.transparentChat);
-          listing.CheckboxLabeled("MpAppendNameToAutosave".Translate(), ref settings.appendNameToAutosave);
-          listing.CheckboxLabeled("MpShowModCompat".Translate(), ref settings.showModCompatibility,
-              "MpShowModCompatDesc".Translate());
-          listing.CheckboxLabeled("MpEnablePingsSetting".Translate(), ref settings.enablePings);
-          listing.CheckboxLabeled("MpEnableCrossPlanetLayerPings".Translate(), ref settings.enableCrossPlanetLayerPings,
-              "MpEnableCrossPlanetLayerPingsDesc".Translate());
-          listing.CheckboxLabeled("MpShowMainMenuAnimation".Translate(), ref settings.showMainMenuAnim);
-         */
-
-        //   listing.CheckboxLabeled("MpEnablePingsSetting".Translate(), ref settings.enablePings);
-        //    listing.CheckboxLabeled("MpEnableCrossPlanetLayerPings".Translate(), ref settings.enableCrossPlanetLayerPings,
-        //       "MpEnableCrossPlanetLayerPingsDesc".Translate());
-
-        // ── GENEL ────────────────────────────────────────────────────────
         y = DrawSectionHeader(y, viewRect.width, "PLAYER");
 
-
-
-                        y = DrawTextRow(y, viewRect.width,
-          "MpUsernameSetting".Translate(),
-          ref settings.username,
-          "MpUsernameSetting".Translate(), null, null,
-          onChange: val => {
-              Multiplayer.username = val;
-          },
-          locked: true,
-          validate: val => val.Length <= 15 && MultiplayerServer.UsernamePattern.IsMatch(val),
-          controlName: UsernameField);
+        y = DrawTextRow(y, viewRect.width,
+         "MpUsernameSetting".Translate(),
+         ref settings.username,
+         "MpUsernameSetting".Translate(),
+         null,
+         null,
+         onChange: val =>
+         {
+             Multiplayer.username = val;
+         },
+         locked: true,
+         validate: val => val.Length <= 15 && MultiplayerServer.UsernamePattern.IsMatch(val),
+         controlName: UsernameField);
 
         y += SectionGap;
         y = DrawSectionHeader(y, viewRect.width, "SERVER");
 
-                y = DrawTextRow(y, viewRect.width,
-          "MpAutosaveSlots".Translate(),
-          ref slotsBuffer,
-          "MpAutosaveSlots".Translate(), null, null,
-          onChange: val => {
-              slotsBuffer = val;
-          },
-          locked: false,
-          validate: val => OnlyNumber.IsMatch(val));
+        y = DrawIntRow(y, viewRect.width,
+  "MpAutosaveSlots".Translate(),
+  ref settings.autosaveSlots,
+  "MpAutosaveSlots".Translate(), null, null,
+  onChange: val =>
+  {
+      settings.autosaveSlots = val;
+  },
+  locked: false);
 
         y = DrawToggleRow(y, viewRect.width, "MpAutoAcceptSteam".Translate(),
           ref settings.autoAcceptSteam,
@@ -291,7 +204,8 @@ public static class MpSettingsWindow
           "MpHideOtherPlayersInColonistBar".Translate(),
           null,
           null,
-          onChange: newVal => {
+          onChange: newVal =>
+          {
               if (Multiplayer.Client != null)
               {
                   Log.Warning("TEST");
@@ -334,10 +248,85 @@ public static class MpSettingsWindow
 ref settings.showDevInfo,
 "Show Debug Window",
 null,
-null);
+null,
+locked: !Prefs.DevMode);
+
+
+        if (MpVersion.IsDebug && FileAssoc.IsSupported())
+        {
+            if (FileAssoc.IsRegistered())
+            {
+                y = DrawButtonRow(y, viewRect.width, "Remove File Associations", "REMOVE", "Remove File Associations", null, null,
+locked: !Prefs.DevMode, onClick: () =>
+{
+    FileAssoc.Remove();
+});
+            }
+            else
+            {
+                y = DrawButtonRow(y, viewRect.width, "Register File Associations", "REGISTER", "Register File Associations", null, null,
+locked: !Prefs.DevMode, onClick: () =>
+{
+    FileAssoc.Register();
+});
+            }
+        }
+
+        y = DrawButtonRow(y, viewRect.width, "Generate Debug Info", "GENERATE", "Generate Debug Info", null, null,
+        locked: false, onClick: () =>
+        {
+            try
+            {
+                DebugInfoFile.Generate();
+            }
+            catch (Exception e)
+            {
+                Log.Error($"Failed to generate debug info: {e}");
+            }
+        });
+
+        if (VersionChecker.IsContinuousRelease || VersionChecker.IsLocalBuild)
+        {
+            y = DrawToggleRow(y, viewRect.width, "MpIncludeReplayInDesync".Translate(),
+   ref settings.includeReplayInDesync,
+  "MpIncludeReplayInDesync".Translate(),
+  null,
+  null);
+        }
+
+#if DEBUG
+        y = DrawButtonRow(y, viewRect.width, "Desync Tracing Mode", settings.desyncTracingMode.ToString().ToUpper(), "Desync Tracing Mode", null, null,
+locked: !Prefs.DevMode, onClick: () =>
+{
+    settings.desyncTracingMode = settings.desyncTracingMode.Cycle();
+});
+
+
+#endif
+
+
+        y = DrawIntRow(y, viewRect.width,
+  "Desync Radius",
+  ref settings.desyncTracesRadius,
+  "Desync Radius", null, null,
+  onChange: val =>
+  {
+      settings.desyncTracesRadius = val;
+  },
+locked: !Prefs.DevMode);
+
+        y = DrawIntRow(y, viewRect.width,
+  "Jitted Methods",
+  ref settings.jittedMethodsInDesync,
+    "Jitted Methods", null, null,
+  onChange: val =>
+  {
+      settings.jittedMethodsInDesync = val;
+  },
+locked: !Prefs.DevMode);
 
         y += 8f;
-        _totalContentH = y; // bir sonraki frame'de scroll yüksekliği doğru hesaplanır
+        _totalContentH = y;
 
         Widgets.EndScrollView();
     }
@@ -498,6 +487,69 @@ null);
         return yPosition + RowHeight + 4f;
     }
 
+    private static float DrawButtonRow(float yPosition, float width, string labelText, string buttonText, string previewTitle, string description, Texture2D previewImage, bool locked = false, Action onClick = null)
+    {
+        Rect row = new Rect(0f, yPosition, width, RowHeight);
+        Widgets.DrawBoxSolidWithOutline(row, Gray(0.18f, 0.85f), locked ? Gray(1f, 0.4f) : Color.white, 1);
+
+        HandleRowHover(row, previewTitle, description, previewImage);
+
+        bool isHovered = Mouse.IsOver(row);
+        if (isHovered && _lastHoveredRow != yPosition)
+        {
+            SoundDefOf.Mouseover_Standard.PlayOneShotOnCamera();
+            _lastHoveredRow = yPosition;
+        }
+        else if (!isHovered && _lastHoveredRow == yPosition)
+            _lastHoveredRow = -1f;
+
+        if (isHovered)
+            Widgets.DrawBoxSolid(row, ColorHover);
+
+        // Button Width
+        Text.Font = GameFont.Tiny;
+        float buttonWidth = Text.CalcSize(buttonText).x + 16f;
+        buttonWidth = Mathf.Max(buttonWidth, 44f);
+        Text.Font = GameFont.Small;
+
+        float labelWidth = width - buttonWidth - 36f - 16f;
+
+        // Label
+        GUI.color = locked ? Gray(1f, 0.4f) : Color.white;
+        Text.Anchor = TextAnchor.MiddleLeft;
+        Widgets.Label(new Rect(8f, yPosition + 2f, labelWidth, RowHeight - 4f), "■  " + labelText);
+        Text.Anchor = TextAnchor.UpperLeft;
+        GUI.color = Color.white;
+
+        // Button
+        Rect btnRect = new Rect(width - buttonWidth - 4f, yPosition + 5f, buttonWidth, RowHeight - 10f);
+        Widgets.DrawBoxSolidWithOutline(btnRect, locked ? Gray(0.15f, 0.5f) : Gray(0.25f), locked ? Gray(1f, 0.4f) : Color.white, 1);
+
+        Text.Font = GameFont.Tiny;
+        GUI.color = locked ? Gray(0.6f) : Color.white;
+        Text.Anchor = TextAnchor.MiddleCenter;
+        Widgets.Label(new Rect(btnRect.x, btnRect.y + 1f, btnRect.width, btnRect.height), buttonText);
+        Text.Anchor = TextAnchor.UpperLeft;
+        Text.Font = GameFont.Small;
+        GUI.color = Color.white;
+
+        if (locked)
+        {
+            if (isHovered)
+                TooltipHandler.TipRegion(row, "MpSettingLocked".Translate());
+
+            if (Widgets.ButtonInvisible(btnRect, false))
+                SoundDefOf.ClickReject.PlayOneShotOnCamera();
+        }
+        else if (Widgets.ButtonInvisible(btnRect, false))
+        {
+            SoundDefOf.Click.PlayOneShotOnCamera();
+            onClick?.Invoke();
+        }
+
+        return yPosition + RowHeight + 4f;
+    }
+
     private static float DrawTextRow(float yPosition, float width, string labelText, ref string value, string previewTitle, string description, Texture2D previewImage, bool locked = false, Func<string, bool> validate = null, string controlName = null, Action<string> onChange = null)
     {
         Rect row = new Rect(0f, yPosition, width, RowHeight);
@@ -555,19 +607,6 @@ null);
         return yPosition + RowHeight + 4f;
     }
 
-    private static void HandleRowHover(Rect row, string title, string desc, Texture2D preview)
-    {
-        if (Mouse.IsOver(row))
-        {
-            _selectedTitle = title;
-            _selectedDesc = desc;
-            _selectedPreview = preview;
-
-            Widgets.DrawBoxSolid(row, ColorHover);
-        }
-    }
-    #endregion
-
     private static float DrawSliderRow(float y, float w, string label, ref float value, float min, float max, string previewTitle, string desc, Texture2D preview)
     {
         Rect row = new Rect(0f, y, w, RowHeight);
@@ -580,7 +619,7 @@ null);
         // Label
         Widgets.Label(new Rect(8f, y + 2f, labelW - 8f, RowHeight - 4f), label);
 
-        // Değer göstergesi
+        //
         string valStr = Mathf.RoundToInt(value).ToString();
         Widgets.Label(new Rect(labelW, y + 2f, valW, RowHeight - 4f), valStr);
 
@@ -588,17 +627,79 @@ null);
         Rect sliderRect = new Rect(labelW + valW, y + RowHeight / 2f - 8f, sliderW - 4f, 16f);
         value = Widgets.HorizontalSlider(sliderRect, value, min, max);
 
-        // Alt çizgi
+        // Line
         Widgets.DrawLineHorizontal(4f, y + RowHeight - 1f, w - 8f);
 
         return y + RowHeight;
     }
 
+    private static float DrawIntRow(float yPosition, float width, string labelText, ref int value, string previewTitle, string description, Texture2D previewImage, bool locked = false, Func<int, bool> validate = null, string controlName = null, Action<int> onChange = null)
+    {
+        Rect row = new Rect(0f, yPosition, width, RowHeight);
+        Widgets.DrawBoxSolidWithOutline(row, Gray(0.18f, 0.85f), locked ? Gray(1f, 0.4f) : Color.white, 1);
 
+        HandleRowHover(row, previewTitle, description, previewImage);
 
+        bool isHovered = Mouse.IsOver(row);
+        if (isHovered && _lastHoveredRow != yPosition)
+        {
+            SoundDefOf.Mouseover_Standard.PlayOneShotOnCamera();
+            _lastHoveredRow = yPosition;
+        }
+        else if (!isHovered && _lastHoveredRow == yPosition)
+            _lastHoveredRow = -1f;
 
+        if (isHovered)
+            Widgets.DrawBoxSolid(row, ColorHover);
 
+        float fieldWidth = 120f;
+        float labelWidth = width - fieldWidth - 16f;
 
+        GUI.color = locked ? Gray(1f, 0.4f) : Color.white;
+        Text.Anchor = TextAnchor.MiddleLeft;
+        Widgets.Label(new Rect(8f, yPosition + 2f, labelWidth, RowHeight - 4f), "■  " + labelText);
+        Text.Anchor = TextAnchor.UpperLeft;
+        GUI.color = Color.white;
+
+        Rect fieldRect = new Rect(width - fieldWidth - 4f, yPosition + 5f, fieldWidth, RowHeight - 10f);
+
+        if (controlName != null)
+            GUI.SetNextControlName(controlName);
+
+        string oldStr = value.ToString();
+        GUI.enabled = !locked;
+        string typed = Widgets.TextField(fieldRect, oldStr);
+        GUI.enabled = true;
+
+        if (locked)
+        {
+            if (isHovered)
+                TooltipHandler.TipRegion(row, "MpSettingLocked".Translate());
+
+            if (Widgets.ButtonInvisible(fieldRect, false))
+                SoundDefOf.ClickReject.PlayOneShotOnCamera();
+        }
+        else if (typed != oldStr && int.TryParse(typed, out int parsed) && (validate == null || validate(parsed)))
+        {
+            value = parsed;
+            onChange?.Invoke(value);
+        }
+
+        return yPosition + RowHeight + 4f;
+    }
+
+    private static void HandleRowHover(Rect row, string title, string desc, Texture2D preview)
+    {
+        if (Mouse.IsOver(row))
+        {
+            _selectedTitle = title;
+            _selectedDesc = desc;
+            _selectedPreview = preview;
+
+            Widgets.DrawBoxSolid(row, ColorHover);
+        }
+    }
+    #endregion
 
     private static (string r, string g, string b)[] colorsBuffer = { };
 
@@ -682,39 +783,6 @@ null);
 
         return false;
     }
-
-
-    private static void DoUsernameField(MpSettings settings, Listing_Standard listing)
-    {
-        GUI.SetNextControlName(UsernameField);
-
-        var prevField = settings.username;
-        var fieldStr = listing.TextEntryLabeled("MpUsernameSetting".Translate() + ":  ", settings.username);
-
-        if (prevField != fieldStr && fieldStr.Length <= 15 && MultiplayerServer.UsernamePattern.IsMatch(fieldStr))
-        {
-            settings.username = fieldStr;
-            Multiplayer.username = fieldStr;
-        }
-
-        // Don't allow changing the username while playing
-        if (Multiplayer.Client != null && GUI.GetNameOfFocusedControl() == UsernameField)
-            UI.UnfocusCurrentControl();
-    }
-
-    private static void DoHideOtherPlayersInColonistBarField(MpSettings settings, Listing_Standard listing)
-    {
-
-        bool oldValue = settings.hideOtherPlayersInColonistBar;
-        listing.CheckboxLabeled("MpHideOtherPlayersInColonistBar".Translate(), ref settings.hideOtherPlayersInColonistBar);
-        if (oldValue != settings.hideOtherPlayersInColonistBar && Multiplayer.Client != null)
-        {
-            //Force update ColonistBar
-            Find.ColonistBar.MarkColonistsDirty();
-            Find.ColonistBar.CheckRecacheEntries();
-        }
-
-    }
-
-
 }
+
+
