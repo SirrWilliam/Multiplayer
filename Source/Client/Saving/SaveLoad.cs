@@ -20,13 +20,23 @@ namespace Multiplayer.Client
 
     public static class SaveLoad
     {
-        public static TempGameData SaveAndReload(bool cache = false)
+        public static TempGameData SaveAndReload()
+        {
+            return SaveAndReload(ReloadOptimizationMode.None);
+        }
+
+        public static TempGameData SaveAndReload(ReloadOptimizationMode optimizationMode)
+        {
+            var data = SaveAndReloadCore(optimizationMode);
+            ReloadOptimization.Complete(optimizationMode);
+            return data;
+        }
+
+        private static TempGameData SaveAndReloadCore(ReloadOptimizationMode optimizationMode)
         {
             Multiplayer.reloading = true;
 
-            var worldGridSaved = Find.WorldGrid;
             var tweenedPos = new Dictionary<int, Vector3>();
-            var drawers = new Dictionary<int, MapDrawer>();
             var localFactionId = Multiplayer.RealPlayerFaction.loadID;
             var mapCmds = new Dictionary<int, Queue<ScheduledCommand>>();
             var planetRenderMode = Find.World.renderer.wantedMode;
@@ -37,8 +47,6 @@ namespace Multiplayer.Client
 
             foreach (Map map in Find.Maps)
             {
-                drawers[map.uniqueID] = map.mapDrawer;
-
                 foreach (Pawn p in map.mapPawns.AllPawnsSpawned)
                     tweenedPos[p.thingIDNumber] = p.drawer.tweener.tweenedPos;
 
@@ -58,21 +66,6 @@ namespace Multiplayer.Client
                 gameData = SaveGameData();
             }
 
-            if (cache)
-            {
-                MapDrawerRegenPatch.copyFrom = drawers;
-                WorldGridCachePatch.copyFrom = worldGridSaved;
-                WorldGridExposeDataPatch.copyFrom = worldGridSaved;
-                WorldRendererCachePatch.copyFrom = worldGridSaved;
-            }
-            else
-            {
-                MapDrawerRegenPatch.copyFrom.Clear();
-                WorldGridCachePatch.copyFrom = null;
-                WorldGridExposeDataPatch.copyFrom = null;
-                WorldRendererCachePatch.copyFrom = null;
-            }
-
             MusicManagerPlay musicManager = null;
             if (Find.MusicManagerPlay.gameObjectCreated)
             {
@@ -88,7 +81,11 @@ namespace Multiplayer.Client
             if (musicManager != null)
                 Current.Root_Play.musicManagerPlay = musicManager;
 
-            Multiplayer.game.ChangeRealPlayerFaction(Find.FactionManager.GetById(localFactionId));
+            var reloadPlan = ReloadOptimization.PlanFor(optimizationMode);
+            Multiplayer.game.ChangeRealPlayerFaction(
+                Find.FactionManager.GetById(localFactionId),
+                reloadPlan.RegenerateMapDrawersWhenRestoringFaction
+            );
 
             foreach (Map m in Find.Maps)
             {
@@ -116,6 +113,14 @@ namespace Multiplayer.Client
             Multiplayer.reloading = false;
 
             return gameData;
+        }
+
+        public static GameDataSnapshot SaveReloadAndCreateSnapshot(bool removeCurrentMapId, ReloadOptimizationMode optimizationMode)
+        {
+            var data = SaveAndReloadCore(optimizationMode);
+            var snapshot = CreateGameDataSnapshot(data, removeCurrentMapId);
+            ReloadOptimization.Complete(optimizationMode);
+            return snapshot;
         }
 
         public static void LoadInMainThread(TempGameData gameData)
