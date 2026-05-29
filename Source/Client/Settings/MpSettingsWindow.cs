@@ -4,11 +4,7 @@ using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Security.Cryptography;
 using UnityEngine;
-using UnityEngine.Assertions;
-using UnityEngine.UIElements;
 using Verse;
 using Verse.Sound;
 using Random = System.Random;
@@ -17,37 +13,41 @@ namespace Multiplayer.Client;
 
 public static class MpSettingsWindow
 {
+
+    // Sınıfın içine, fonksiyonların dışına statik olarak ekleyin:
+    private static readonly System.Text.RegularExpressions.Regex OnlyNumber = new (@"^[1-9]\d*$");
+    //
+    private static Vector2 _scrollPosition = Vector2.zero;
+    private static SettingsTabs _currentTab = SettingsTabs.General;
+    private static string _selectedTitle = null;
+    private static string _selectedDesc = null;
+    private static Texture2D _selectedPreview = null;   // null = placeholder
+    private static float _lastHoveredRow = -1f;
     private static string slotsBuffer;
     private static string desyncRadiusBuffer;
     private static string jittedMethodsBuffer;
-
-    private static Vector2 scrollPosition = Vector2.zero;
-    private static SettingsTabs currentTab = SettingsTabs.General;
-
-    // ── Pencere boyutu ──────────────────────────────────────────────────────
-
-    // ── Seçili ayarın meta verisi (sağ panel + alt açıklama için) ──────────
-    private static string _selectedTitle = null;
-    private static string _selectedDesc = null;
-    private static Texture2D _selectedPreview = null;   // null = placeholder çizilir
-
-    // ── Scroll pozisyonu (sol panel) ───────────────────────────────────────
+    //Scroll
     private static Vector2 _scrollPos = Vector2.zero;
-    private static float _totalContentH = 0f;          // dinamik hesap
+    private static float _totalContentH = 0f;        
 
-    // ── Layout sabitleri ───────────────────────────────────────────────────
-    private const float TitleH = 36f;
-    private const float ButtonH = 36f;
-    private const float RowH = 32f;
+    //Layout Constants
+    private const float TitleHeight = 36f;
+    private const float ButtonHeight = 36f;
+    private const float RowHeight = 32f;
     private const float SectionGap = 2f;
-    private const float SectionLabelH = 20f;
+    private const float SectionLabelHeight = 20f;
 
-    // ── Renkler ────────────────────────────────────────────────────────────
-    private static readonly Color ColorSection = new Color(0.55f, 0.55f, 0.55f);
-    private static readonly Color ColorHover = new Color(1f, 1f, 1f, 0.07f);
+    //
+    const string UsernameField = "UsernameField";
+
+    //Colors
+    private static Color Gray(float t, float a = 1f) => new Color(t, t, t, a);
+
+    private static readonly Color ColorSection = Gray(0.55f);
+    private static readonly Color ColorHover = Gray(1f, 0.07f);
     private static readonly Color ColorSelected = new Color(0.9f, 0.7f, 0.2f, 0.18f);
-    private static readonly Color ColorPanelBg = new Color(0.13f, 0.13f, 0.13f, 0.95f);
-    private static readonly Color ColorDivider = new Color(0.35f, 0.35f, 0.35f, 0.6f);
+    private static readonly Color ColorPanelBg = Gray(0.13f, 0.95f);
+    private static readonly Color ColorDivider = Gray(0.35f, 0.60f);
 
     private enum SettingsTabs
     {
@@ -60,10 +60,10 @@ public static class MpSettingsWindow
         using var _ = MpStyle.Set(GameFont.Small);
 
         var tabs = new List<TabRecord>
-            {
-            new($"MpSettingsPage{SettingsTabs.General}".Translate(), () => currentTab = SettingsTabs.General, currentTab == SettingsTabs.General),
-            new($"MpSettingsPage{SettingsTabs.Color}".Translate(), () => currentTab = SettingsTabs.Color, currentTab == SettingsTabs.Color),
-            };
+        {
+            new($"MpSettingsPage{SettingsTabs.General}".Translate(), () => _currentTab = SettingsTabs.General, _currentTab == SettingsTabs.General),
+            new($"MpSettingsPage{SettingsTabs.Color}".Translate(), () => _currentTab = SettingsTabs.Color, _currentTab == SettingsTabs.Color),
+        };
         inRect.yMin += 30f;
 
         TabDrawer.DrawTabs(inRect, tabs);
@@ -71,7 +71,7 @@ public static class MpSettingsWindow
         GUI.BeginGroup(new Rect(0, inRect.yMin, inRect.width, inRect.height));
         {
             Rect groupRect = inRect.AtZero();
-            switch (currentTab)
+            switch (_currentTab)
             {
                 case SettingsTabs.General:
                     DrawGeneralSettings(settings, groupRect);
@@ -84,11 +84,13 @@ public static class MpSettingsWindow
         GUI.EndGroup();
     }
 
+    #region Panels
+
     public static void DrawGeneralSettings(MpSettings settings, Rect inRect)
     {
-        // ── Ana gövde alanı ──────────────────────────────────────────────
+        //Body
         float bodyY = inRect.y;
-        float bodyH = inRect.height - TitleH - ButtonH - 8f;
+        float bodyH = inRect.height - TitleHeight - ButtonHeight - 8f;
         Rect bodyRect = new Rect(inRect.x, bodyY, inRect.width, bodyH);
 
         float leftW = bodyRect.width * 0.52f - 4f;
@@ -99,12 +101,6 @@ public static class MpSettingsWindow
 
         DrawLeftPanel(settings, leftRect);
         DrawRightPanel(rightRect);
-
-        // ── Butonlar ──────────────────────────────────────────────────────
-        Rect btnRect = new Rect(inRect.x,
-                                inRect.y + inRect.height - ButtonH,
-                                inRect.width, ButtonH);
-
 
         /*  var listing = new Listing_Standard();
           listing.Begin(inRect);
@@ -197,12 +193,9 @@ public static class MpSettingsWindow
     }
 
 
-    // ═══════════════════ SOL PANEL ════════════════════════════════════════
     private static void DrawLeftPanel(MpSettings settings, Rect rect)
     {
-        Widgets.DrawBoxSolid(rect, ColorPanelBg);
-        Widgets.DrawBox(rect, 1);
-
+        Widgets.DrawBoxSolidWithOutline(rect, ColorPanelBg, ColorLibrary.Grey, 1);
         Rect inner = rect.ContractedBy(6f);
 
         // Scroll view
@@ -211,101 +204,147 @@ public static class MpSettingsWindow
 
         float y = 0f;
 
-        //   DoHideOtherPlayersInColonistBarField(settings, listing);
-
+        /*
+          listing.CheckboxLabeled("MpShowPlayerCursors".Translate(), ref settings.showCursors);
+          DoHideOtherPlayersInColonistBarField(settings, listing);
+          listing.CheckboxLabeled("MpPlayerCursorTransparency".Translate(), ref settings.transparentPlayerCursors);
+          listing.CheckboxLabeled("MpAutoAcceptSteam".Translate(), ref settings.autoAcceptSteam,
+              "MpAutoAcceptSteamDesc".Translate());
+          listing.CheckboxLabeled("MpTransparentChat".Translate(), ref settings.transparentChat);
+          listing.CheckboxLabeled("MpAppendNameToAutosave".Translate(), ref settings.appendNameToAutosave);
+          listing.CheckboxLabeled("MpShowModCompat".Translate(), ref settings.showModCompatibility,
+              "MpShowModCompatDesc".Translate());
+          listing.CheckboxLabeled("MpEnablePingsSetting".Translate(), ref settings.enablePings);
+          listing.CheckboxLabeled("MpEnableCrossPlanetLayerPings".Translate(), ref settings.enableCrossPlanetLayerPings,
+              "MpEnableCrossPlanetLayerPingsDesc".Translate());
+          listing.CheckboxLabeled("MpShowMainMenuAnimation".Translate(), ref settings.showMainMenuAnim);
+         */
 
         //   listing.CheckboxLabeled("MpEnablePingsSetting".Translate(), ref settings.enablePings);
         //    listing.CheckboxLabeled("MpEnableCrossPlanetLayerPings".Translate(), ref settings.enableCrossPlanetLayerPings,
         //       "MpEnableCrossPlanetLayerPingsDesc".Translate());
 
         // ── GENEL ────────────────────────────────────────────────────────
+        y = DrawSectionHeader(y, viewRect.width, "PLAYER");
+
+
+
+                        y = DrawTextRow(y, viewRect.width,
+          "MpUsernameSetting".Translate(),
+          ref settings.username,
+          "MpUsernameSetting".Translate(), null, null,
+          onChange: val => {
+              Multiplayer.username = val;
+          },
+          locked: true,
+          validate: val => val.Length <= 15 && MultiplayerServer.UsernamePattern.IsMatch(val),
+          controlName: UsernameField);
+
+        y += SectionGap;
         y = DrawSectionHeader(y, viewRect.width, "SERVER");
 
+                y = DrawTextRow(y, viewRect.width,
+          "MpAutosaveSlots".Translate(),
+          ref slotsBuffer,
+          "MpAutosaveSlots".Translate(), null, null,
+          onChange: val => {
+              slotsBuffer = val;
+          },
+          locked: false,
+          validate: val => OnlyNumber.IsMatch(val));
+
         y = DrawToggleRow(y, viewRect.width, "MpAutoAcceptSteam".Translate(),
-        ref settings.autoAcceptSteam,
-        "MpAutoAcceptSteam".Translate(),
-        "MpAutoAcceptSteamDesc".Translate(),
-        null);
+          ref settings.autoAcceptSteam,
+          "MpAutoAcceptSteam".Translate(),
+          "MpAutoAcceptSteamDesc".Translate(),
+          null, true);
 
         y = DrawToggleRow(y, viewRect.width, "MpAppendNameToAutosave".Translate(),
-    ref settings.appendNameToAutosave,
-    "MpAppendNameToAutosave".Translate(),
-    null,
-    null);
+          ref settings.appendNameToAutosave,
+          "MpAppendNameToAutosave".Translate(),
+          null,
+          null);
 
         y += SectionGap;
         y = DrawSectionHeader(y, viewRect.width, "USER INTERFACE");
 
-        y = DrawTextRow(y, viewRect.width,
-    "MpUsernameSetting".Translate(),
-    ref settings.username,
-     "MpUsernameSetting".Translate(), null, null,
-    onChange: val => Multiplayer.username = val,
-    validate: val => val.Length <= 15 && MultiplayerServer.UsernamePattern.IsMatch(val),
-    controlName: UsernameField);
-
-        // Oyundayken odaklanmayı engelle — metod dışında kalması mantıklı
-        // çünkü bu davranış sadece bu alana özel
-        if (Multiplayer.Client != null && GUI.GetNameOfFocusedControl() == UsernameField)
-            UI.UnfocusCurrentControl();
-
-
         y = DrawToggleRow(y, viewRect.width, "MpShowPlayerCursors".Translate(),
-         ref settings.showCursors,
-         "MpShowPlayerCursors".Translate(),
-         null,
-         null);
+          ref settings.showCursors,
+          "MpShowPlayerCursors".Translate(),
+          null,
+          null);
 
         y = DrawToggleRow(y, viewRect.width, "MpPlayerCursorTransparency".Translate(),
-         ref settings.transparentPlayerCursors,
-         "MpPlayerCursorTransparency".Translate(),
-         null,
-         null);
+          ref settings.transparentPlayerCursors,
+          "MpPlayerCursorTransparency".Translate(),
+          null,
+          null);
 
         y = DrawToggleRow(y, viewRect.width, "MpTransparentChat".Translate(),
-         ref settings.transparentChat,
-         "MpTransparentChat".Translate(),
-         "MpTransparentChatDesc".Translate(),
-         MultiplayerStatic.MpTransparentChat);
+          ref settings.transparentChat,
+          "MpTransparentChat".Translate(),
+          "MpTransparentChatDesc".Translate(),
+          MultiplayerStatic.MpTransparentChat);
 
         y = DrawToggleRow(y, viewRect.width, "MpHideOtherPlayersInColonistBar".Translate(),
-         ref settings.hideOtherPlayersInColonistBar,
-         "MpHideOtherPlayersInColonistBar".Translate(),
-         null,
-         null,
-         onChange: newVal =>
-         {
-             if (Multiplayer.Client != null)
-             {
-                 Log.Warning("TEST");
-                 Find.ColonistBar.MarkColonistsDirty();
-                 Find.ColonistBar.CheckRecacheEntries();
-             }
-         });
+          ref settings.hideOtherPlayersInColonistBar,
+          "MpHideOtherPlayersInColonistBar".Translate(),
+          null,
+          null,
+          onChange: newVal => {
+              if (Multiplayer.Client != null)
+              {
+                  Log.Warning("TEST");
+                  Find.ColonistBar.MarkColonistsDirty();
+                  Find.ColonistBar.CheckRecacheEntries();
+              }
+          });
 
         y = DrawToggleRow(y, viewRect.width, "MpShowModCompat".Translate(),
-         ref settings.showModCompatibility,
-         "MpShowModCompat".Translate(),
+          ref settings.showModCompatibility,
+          "MpShowModCompat".Translate(),
           "MpShowModCompatDesc".Translate(),
-         null);
+          null);
 
         y = DrawToggleRow(y, viewRect.width, "MpShowMainMenuAnimation".Translate(),
-         ref settings.showMainMenuAnim,
-         "MpShowMainMenuAnimation".Translate(),
-         null,
-         null);
+          ref settings.showMainMenuAnim,
+          "MpShowMainMenuAnimation".Translate(),
+          null,
+          null);
+
+        y += SectionGap;
+        y = DrawSectionHeader(y, viewRect.width, "PING");
+
+        y = DrawToggleRow(y, viewRect.width, "MpEnablePingsSetting".Translate(),
+   ref settings.enablePings,
+   "MpEnablePingsSetting".Translate(),
+   null,
+   null);
+
+        y = DrawToggleRow(y, viewRect.width, "MpEnableCrossPlanetLayerPings".Translate(),
+   ref settings.enableCrossPlanetLayerPings,
+   "MpEnableCrossPlanetLayerPings".Translate(),
+   "MpEnableCrossPlanetLayerPingsDesc".Translate(),
+   null);
+
+        y += SectionGap;
+        y = DrawSectionHeader(y, viewRect.width, "DEBUG");
+
+        y = DrawToggleRow(y, viewRect.width, "Show Debug Window",
+ref settings.showDevInfo,
+"Show Debug Window",
+null,
+null);
 
         y += 8f;
-        _totalContentH = y;  // bir sonraki frame'de scroll yüksekliği doğru hesaplanır
+        _totalContentH = y; // bir sonraki frame'de scroll yüksekliği doğru hesaplanır
 
         Widgets.EndScrollView();
     }
 
-    // ═══════════════════ SAĞ PANEL (ÖNİZLEME + AÇIKLAMA) ════════════════
     private static void DrawRightPanel(Rect rect)
     {
-        Widgets.DrawBoxSolid(rect, ColorPanelBg);
-        Widgets.DrawBox(rect, 1);
+        Widgets.DrawBoxSolidWithOutline(rect, ColorPanelBg, ColorLibrary.Grey, 1);
 
         Rect inner = rect.ContractedBy(10f);
 
@@ -321,7 +360,7 @@ public static class MpSettingsWindow
 
         float y = inner.y;
 
-        // ── Başlık ────────────────────────────────────────────────────────
+        // Title
         Text.Font = GameFont.Small;
         GUI.color = new Color(0.85f, 0.85f, 0.85f);
         Widgets.Label(new Rect(inner.x, y, inner.width, 22f),
@@ -329,12 +368,11 @@ public static class MpSettingsWindow
         GUI.color = Color.white;
         y += 26f;
 
-        // ── Ayırıcı çizgi ─────────────────────────────────────────────────
+        // Line
         Widgets.DrawLineHorizontal(inner.x, y, inner.width);
         y += 8f;
 
-        // ── Görsel (varsa) ─────────────────────────────────────────────────
-        // Resim panelin %60'ını alır; yoksa hiç yer kaplamaz → açıklama üste kayar
+        // Preview Image
         if (_selectedPreview != null)
         {
             float previewH = inner.width * (720f / 1280f);
@@ -347,135 +385,174 @@ public static class MpSettingsWindow
             y += 6f;
         }
 
-        // ── Açıklama — her zaman görselin hemen altında ────────────────────
+        // Description
         if (!string.IsNullOrEmpty(_selectedDesc))
         {
             Rect descRect = new Rect(inner.x, y, inner.width, inner.yMax - y);
             Widgets.Label(descRect, _selectedDesc);
         }
     }
+    #endregion
 
-    // ═══════════════════ YARDIMCI ÇİZİM METODLARİ ═════════════════════════
-
-    /// Bölüm başlığı (GENEL, MİNİHARİTA vb.)
-    private static float DrawSectionHeader(float y, float w, string label)
+    #region UI Utils
+    /// <summary>
+    /// Draws a tiny, colored section header label and returns the updated Y position for the next UI element.
+    /// </summary>
+    /// <param name="yPosition">The current vertical position on the canvas where the header starts.</param>
+    /// <param name="width">The total available width for the header constraint.</param>
+    /// <param name="headerText">The text string to display as the section title.</param>
+    /// <returns>The next available Y position, factoring in the header height and bottom spacing.</returns>
+    private static float DrawSectionHeader(float yPosition, float width, string headerText)
     {
         Text.Font = GameFont.Tiny;
         GUI.color = ColorSection;
-        Widgets.Label(new Rect(4f, y, w - 8f, SectionLabelH), label);
+        Widgets.Label(new Rect(4f, yPosition, width - 8f, SectionLabelHeight), headerText);
         GUI.color = Color.white;
         Text.Font = GameFont.Small;
-        return y + SectionLabelH + 6f;
+        return yPosition + SectionLabelHeight + 6f;
     }
 
-    /// Slider satırı — hover'da sağ panel + açıklama güncellenir
-    private static float DrawSliderRow(float y, float w, string label, ref float value, float min, float max, string previewTitle, string desc, Texture2D preview)
+    /// <summary>
+    /// Draws a custom interactive toggle (ON/OFF) row with hover-based preview handling.
+    /// Supports disabling interactions via the locked state and triggers a callback upon value changes.
+    /// </summary>
+    /// <param name="yPosition">The current vertical layout position where the row starts.</param>
+    /// <param name="width">The total available width for the row layout.</param>
+    /// <param name="labelText">The display label text for the toggle setting.</param>
+    /// <param name="value">A reference to the boolean variable being toggled.</param>
+    /// <param name="previewTitle">The title passed to the preview panel when the row is hovered.</param>
+    /// <param name="description">The descriptive text passed to the preview panel when the row is hovered.</param>
+    /// <param name="previewImage">The texture/image passed to the preview panel when the row is hovered.</param>
+    /// <param name="locked">If set to true, interaction is disabled (Useful for gating settings behind research or conditions).</param>
+    /// <param name="onChange">An optional callback action triggered immediately after the value changes, passing the new state.</param>
+    /// <returns>The next available Y position, factoring in the row height and spacing for sequential layout building.</returns>
+    private static float DrawToggleRow(float yPosition, float width, string labelText, ref bool value, string previewTitle, string description, Texture2D previewImage, bool locked = false, Action<bool> onChange = null)
     {
-        Rect row = new Rect(0f, y, w, RowH);
-        HandleRowHover(row, previewTitle, desc, preview);
+        Rect row = new Rect(0f, yPosition, width, RowHeight);
+        Widgets.DrawBoxSolidWithOutline(row, Gray(0.18f, 0.85f), locked ? Gray(1f, 0.4f) : Color.white, 1);
 
-        float labelW = w * 0.52f;
-        float valW = 32f;
-        float sliderW = w - labelW - valW - 12f;
+        HandleRowHover(row, previewTitle, description, previewImage);
+
+        // Hover Sound
+        bool isHovered = Mouse.IsOver(row);
+        if (isHovered && _lastHoveredRow != yPosition)
+        {
+            SoundDefOf.Mouseover_Standard.PlayOneShotOnCamera();
+            _lastHoveredRow = yPosition;
+        }
+        else if (!isHovered && _lastHoveredRow == yPosition)
+            _lastHoveredRow = -1f;
+
+        if (isHovered)
+            Widgets.DrawBoxSolid(row, ColorHover);
+
+        // Toggle Button Width
+        Text.Font = GameFont.Tiny;
+        string onLabelText = "MpSettingOn".Translate();
+        string offLabelText = "MpSettingOff".Translate();
+        float toggleButtonWidth = Mathf.Max(Text.CalcSize(onLabelText).x, Text.CalcSize(offLabelText).x) + 16f;
+        toggleButtonWidth = Mathf.Max(toggleButtonWidth, 44f);
+        Text.Font = GameFont.Small;
+
+        float labelWidth = width - toggleButtonWidth - 36f - 16f;
 
         // Label
-        Widgets.Label(new Rect(8f, y + 2f, labelW - 8f, RowH - 4f), label);
-
-        // Değer göstergesi
-        string valStr = Mathf.RoundToInt(value).ToString();
-        Widgets.Label(new Rect(labelW, y + 2f, valW, RowH - 4f), valStr);
-
-        // Slider
-        Rect sliderRect = new Rect(labelW + valW, y + RowH / 2f - 8f, sliderW - 4f, 16f);
-        value = Widgets.HorizontalSlider(sliderRect, value, min, max);
-
-        // Alt çizgi
-        Widgets.DrawLineHorizontal(4f, y + RowH - 1f, w - 8f);
-
-        return y + RowH;
-    }
-
-    private static float DrawToggleRow(float y, float w, string label, ref bool value, string previewTitle, string desc, Texture2D preview, Action<bool> onChange = null)
-    {
-        Rect row = new Rect(0f, y, w, RowH);
-
-        Widgets.DrawBoxSolid(row, new Color(0.18f, 0.18f, 0.18f, 0.85f));
-        Widgets.DrawBox(row, 1);
-
-        HandleRowHover(row, previewTitle, desc, preview);
-
-        if (Mouse.IsOver(row))
-            Widgets.DrawBoxSolid(row, new Color(0.30f, 0.30f, 0.30f, 0.6f));
-
-
-        float btnW = 52f;
-        float valW = 36f;
-        float labelW = w - btnW - valW - 16f;
-
+        GUI.color = locked ? Gray(1f, 0.4f) : Color.white;
         Text.Anchor = TextAnchor.MiddleLeft;
-        Widgets.Label(new Rect(8f, y + 2f, labelW, RowH - 4f), "■  " + label);
+        Widgets.Label(new Rect(8f, yPosition + 2f, labelWidth, RowHeight - 4f), "■  " + labelText);
         Text.Anchor = TextAnchor.UpperLeft;
+        GUI.color = Color.white;
 
-        Rect btnRect = new Rect(w - btnW - 4f, y + 5f, btnW, RowH - 10f);
-        Widgets.DrawBoxSolid(btnRect, value ? Color.white : new Color(0.25f, 0.25f, 0.25f));
-        Widgets.DrawBox(btnRect, 1);
+        // Toggle Button Background
+        Rect btnRect = new Rect(width - toggleButtonWidth - 4f, yPosition + 5f, toggleButtonWidth, RowHeight - 10f);
+        Color btnBg = value
+            ? (locked ? Gray(0.7f, 0.5f) : Color.white)
+            : (locked ? Gray(0.15f, 0.5f) : Gray(0.25f));
+        Widgets.DrawBoxSolidWithOutline(btnRect, btnBg, locked ? Gray(1f, 0.4f) : Color.white, 1);
 
+        // Toggle Button Text
         Text.Font = GameFont.Tiny;
-        GUI.color = value ? Color.black : new Color(0.6f, 0.6f, 0.6f);
+        GUI.color = locked ? (value ? Color.black : Gray(0.6f)) : Gray(0.5f);
         Text.Anchor = TextAnchor.MiddleCenter;
-        Widgets.Label(new Rect(btnRect.x, btnRect.y + 1f, btnRect.width, btnRect.height), value ? "ON" : "OFF");
+        Widgets.Label(new Rect(btnRect.x, btnRect.y + 1f, btnRect.width, btnRect.height),
+            value ? offLabelText : onLabelText);
         Text.Anchor = TextAnchor.UpperLeft;
         Text.Font = GameFont.Small;
         GUI.color = Color.white;
 
-        if (Widgets.ButtonInvisible(btnRect, false))
+        if (locked)
+        {
+            if (isHovered)
+                TooltipHandler.TipRegion(row, "MpSettingLocked".Translate());
+
+            if (Widgets.ButtonInvisible(btnRect, false))
+                SoundDefOf.ClickReject.PlayOneShotOnCamera();
+        }
+        else if (Widgets.ButtonInvisible(btnRect, false))
         {
             value = !value;
+            (value ? SoundDefOf.Checkbox_TurnedOn : SoundDefOf.Checkbox_TurnedOff).PlayOneShotOnCamera();
             onChange?.Invoke(value);
         }
 
-        return y + RowH + 4f;
+        return yPosition + RowHeight + 4f;
     }
 
-    private static float DrawTextRow(float y, float w,
-        string label, ref string value,
-        string previewTitle, string desc, Texture2D preview,
-        Action<string> onChange = null,
-        Func<string, bool> validate = null,   
-        string controlName = null)             
+    private static float DrawTextRow(float yPosition, float width, string labelText, ref string value, string previewTitle, string description, Texture2D previewImage, bool locked = false, Func<string, bool> validate = null, string controlName = null, Action<string> onChange = null)
     {
-        Rect row = new Rect(0f, y, w, RowH);
+        Rect row = new Rect(0f, yPosition, width, RowHeight);
+        Widgets.DrawBoxSolidWithOutline(row, Gray(0.18f, 0.85f), locked ? Gray(1f, 0.4f) : Color.white, 1);
 
-        Widgets.DrawBoxSolid(row, new Color(0.18f, 0.18f, 0.18f, 0.85f));
-        Widgets.DrawBox(row, 1);
+        HandleRowHover(row, previewTitle, description, previewImage);
 
-        HandleRowHover(row, previewTitle, desc, preview);
+        // Hover Sound
+        bool isHovered = Mouse.IsOver(row);
+        if (isHovered && _lastHoveredRow != yPosition)
+        {
+            SoundDefOf.Mouseover_Standard.PlayOneShotOnCamera();
+            _lastHoveredRow = yPosition;
+        }
+        else if (!isHovered && _lastHoveredRow == yPosition)
+            _lastHoveredRow = -1f;
 
-        if (Mouse.IsOver(row))
-            Widgets.DrawBoxSolid(row, new Color(0.30f, 0.30f, 0.30f, 0.6f));
+        if (isHovered)
+            Widgets.DrawBoxSolid(row, ColorHover);
 
-        float fieldW = 120f;
-        float labelW = w - fieldW - 16f;
+        float fieldWidth = 120f;
+        float labelWidth = width - fieldWidth - 16f;
 
+        // Label
+        GUI.color = locked ? Gray(1f, 0.4f) : Color.white;
         Text.Anchor = TextAnchor.MiddleLeft;
-        Widgets.Label(new Rect(8f, y + 2f, labelW, RowH - 4f), "■  " + label);
+        Widgets.Label(new Rect(8f, yPosition + 2f, labelWidth, RowHeight - 4f), "■  " + labelText);
         Text.Anchor = TextAnchor.UpperLeft;
+        GUI.color = Color.white;
 
-        Rect fieldRect = new Rect(w - fieldW - 4f, y + 5f, fieldW, RowH - 10f);
+        Rect fieldRect = new Rect(width - fieldWidth - 4f, yPosition + 5f, fieldWidth, RowHeight - 10f);
 
         if (controlName != null)
             GUI.SetNextControlName(controlName);
 
         string oldValue = value;
+        GUI.enabled = !locked;
         string typed = Widgets.TextField(fieldRect, value);
+        GUI.enabled = true;
 
-        if (oldValue != typed && (validate == null || validate(typed)))
+        if (locked)
+        {
+            if (isHovered)
+                TooltipHandler.TipRegion(row, "MpSettingLocked".Translate());
+
+            if (Widgets.ButtonInvisible(fieldRect, false))
+                SoundDefOf.ClickReject.PlayOneShotOnCamera();
+        }
+        else if (oldValue != typed && (validate == null || validate(typed)))
         {
             value = typed;
             onChange?.Invoke(value);
         }
 
-        return y + RowH + 4f;
+        return yPosition + RowHeight + 4f;
     }
 
     private static void HandleRowHover(Rect row, string title, string desc, Texture2D preview)
@@ -489,6 +566,39 @@ public static class MpSettingsWindow
             Widgets.DrawBoxSolid(row, ColorHover);
         }
     }
+    #endregion
+
+    private static float DrawSliderRow(float y, float w, string label, ref float value, float min, float max, string previewTitle, string desc, Texture2D preview)
+    {
+        Rect row = new Rect(0f, y, w, RowHeight);
+        HandleRowHover(row, previewTitle, desc, preview);
+
+        float labelW = w * 0.52f;
+        float valW = 32f;
+        float sliderW = w - labelW - valW - 12f;
+
+        // Label
+        Widgets.Label(new Rect(8f, y + 2f, labelW - 8f, RowHeight - 4f), label);
+
+        // Değer göstergesi
+        string valStr = Mathf.RoundToInt(value).ToString();
+        Widgets.Label(new Rect(labelW, y + 2f, valW, RowHeight - 4f), valStr);
+
+        // Slider
+        Rect sliderRect = new Rect(labelW + valW, y + RowHeight / 2f - 8f, sliderW - 4f, 16f);
+        value = Widgets.HorizontalSlider(sliderRect, value, min, max);
+
+        // Alt çizgi
+        Widgets.DrawLineHorizontal(4f, y + RowHeight - 1f, w - 8f);
+
+        return y + RowHeight;
+    }
+
+
+
+
+
+
 
     private static (string r, string g, string b)[] colorsBuffer = { };
 
@@ -512,7 +622,7 @@ public static class MpSettingsWindow
             colorsBuffer = new (string r, string g, string b)[settings.playerColors.Count];
         }
 
-        Widgets.BeginScrollView(inRect, ref scrollPosition, viewRect);
+        Widgets.BeginScrollView(inRect, ref _scrollPosition, viewRect);
 
         var toRemove = -1;
         for (var i = 0; i < settings.playerColors.Count; i++)
@@ -573,7 +683,6 @@ public static class MpSettingsWindow
         return false;
     }
 
-    const string UsernameField = "UsernameField";
 
     private static void DoUsernameField(MpSettings settings, Listing_Standard listing)
     {

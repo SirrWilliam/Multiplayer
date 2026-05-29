@@ -132,12 +132,25 @@ namespace Multiplayer.Client
                 ChatWindow.OpenChat();
             }
 
+            var settingsRect = new Rect(btnRect.x - 25f - 5f + 2f / 2f, y, BtnHeight, BtnHeight);
+            if (Widgets.ButtonText(settingsRect, "", drawBackground: true, doMouseoverSound: true, active: true))
+            {
+                Find.WindowStack.TryRemove(typeof(Dialog_ModSettings));
+                var modSettingsDialog = new Dialog_ModSettings(MultiplayerLoader.Multiplayer.instance);
+                Find.WindowStack.Add(modSettingsDialog);
+            }
+
+            var iconRect = settingsRect.ContractedBy(1f);
+            GUI.DrawTexture(iconRect, MultiplayerStatic.OptionsGeneral);
+
+            TooltipHandler.TipRegion(settingsRect, "Multiplayer Mod Settings");
+
             if (!TickPatch.Simulating)
             {
                 IndicatorInfo(out Color color, out string text, out bool slow);
 
-                var indRect = new Rect(btnRect.x - 25f - 5f + 6f / 2f, btnRect.y + 6f / 2f, 19f, 19f);
-                var biggerRect = new Rect(btnRect.x - 25f - 5f + 2f / 2f, btnRect.y + 2f / 2f, 23f, 23f);
+                var indRect = new Rect(settingsRect.x - 25f - 5f + 6f / 2f, btnRect.y + 6f / 2f, 19f, 19f);
+                var biggerRect = new Rect(settingsRect.x - 25f - 5f + 2f / 2f, btnRect.y + 2f / 2f, 23f, 23f);
 
                 if (slow && Widgets.ButtonInvisible(biggerRect))
                     TickPatch.SetSimulation(toTickUntil: true, canEsc: true);
