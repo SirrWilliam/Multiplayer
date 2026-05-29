@@ -11,31 +11,35 @@ namespace Multiplayer.Client
     public class MpSettings : ModSettings
     {
         public string username;
+        //UI
         public bool showCursors = true;
-        public bool autoAcceptSteam;
         public bool transparentChat = true;
-        public int autosaveSlots = 5;
-        public bool showDevInfo;
-        public bool includeReplayInDesync = VersionChecker.IsContinuousRelease;
-        public int jittedMethodsInDesync = 1500;
-        public int desyncTracesRadius = 40;
-        public string serverAddress = "127.0.0.1";
+        public bool showMainMenuAnim = true;
+        public bool transparentPlayerCursors = true;
         public bool appendNameToAutosave;
         public bool showModCompatibility = true;
         public bool hideTranslationMods = true;
+        public List<ColorRGBClient> playerColors = new(DefaultPlayerColors);
+        public Rect chatRect;
+        public Vector2 resolutionForChat;
+        //Multifaction
+        public bool hideOtherPlayersInColonistBar = false;
+        public bool hideOtherPlayersQuests = false;
+        //Ping
         public bool enablePings = true;
         public bool enableCrossPlanetLayerPings = true;
         public KeyCode? sendPingButton = KeyCode.Mouse4;
         public KeyCode? jumpToPingButton = KeyCode.Mouse3;
-        public Rect chatRect;
-        public Vector2 resolutionForChat;
-        public bool showMainMenuAnim = true;
+        //Server
+        public string serverAddress = "127.0.0.1";
+        public bool autoAcceptSteam;
+        public int autosaveSlots = 5;
+        //Developer
+        public bool showDevInfo;
+        public bool includeReplayInDesync = VersionChecker.IsContinuousRelease;
+        public int jittedMethodsInDesync = 1500;
+        public int desyncTracesRadius = 40;
         public DesyncTracingMode desyncTracingMode = DesyncTracingMode.Fast;
-        public bool transparentPlayerCursors = true;
-        public List<ColorRGBClient> playerColors = new(DefaultPlayerColors);
-
-        public bool hideOtherPlayersInColonistBar = false;
-        public bool hideOtherPlayersQuests = false;
 
 
         internal static readonly ColorRGBClient[] DefaultPlayerColors =

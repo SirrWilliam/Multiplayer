@@ -109,7 +109,7 @@ namespace Multiplayer.Client
             JittedMethods.Init();
 
             MultiplayerLoader.Multiplayer.settingsWindowDrawer =
-                rect => MpSettingsUI.DoSettingsWindowContents(settings, rect);
+                rect => MpSettingsWindow.DoSettingsWindowContents(settings, rect);
 
             using (DeepProfilerWrapper.Section("Multiplayer CacheTypeHierarchy"))
                 TypeCache.CacheTypeHierarchy();

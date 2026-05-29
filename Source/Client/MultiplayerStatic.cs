@@ -35,6 +35,8 @@ namespace Multiplayer.Client
         public static readonly Texture2D DiscordIcon = ContentFinder<Texture2D>.Get("Multiplayer/Discord");
         public static readonly Texture2D Pulse = ContentFinder<Texture2D>.Get("Multiplayer/Pulse");
 
+        public static readonly Texture2D MpTransparentChat = ContentFinder<Texture2D>.Get("Multiplayer/Settings/MpTransparentChat");
+
         public static readonly Texture2D ChangeRelationIcon = ContentFinder<Texture2D>.Get("UI/Icons/VisitorsHelp");
 
         public static readonly Texture2D OptionsGeneral = ContentFinder<Texture2D>.Get("UI/Icons/Options/OptionsGeneral");
