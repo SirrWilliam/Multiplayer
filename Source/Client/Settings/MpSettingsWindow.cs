@@ -97,32 +97,6 @@ public static class MpSettingsWindow
         DrawLeftPanel(settings, leftRect);
         DrawRightPanel(rightRect);
 
-        /*  
-          const string buttonOff = "Off";
-
-          using (MpStyle.Set(TextAnchor.MiddleCenter))
-              if (listing.ButtonTextLabeled("MpPingLocButtonSetting".Translate(),
-                      settings.sendPingButton != null ? $"Mouse {settings.sendPingButton - (int)KeyCode.Mouse0 + 1}" : buttonOff))
-                  Find.WindowStack.Add(new FloatMenu(new List<FloatMenuOption>(ButtonChooser(b => settings.sendPingButton = b))));
-
-          using (MpStyle.Set(TextAnchor.MiddleCenter))
-              if (listing.ButtonTextLabeled("MpJumpToPingButtonSetting".Translate(),
-                      settings.jumpToPingButton != null ? $"Mouse {settings.jumpToPingButton - (int)KeyCode.Mouse0 + 1}" : buttonOff))
-                  Find.WindowStack.Add(
-                      new FloatMenu(new List<FloatMenuOption>(ButtonChooser(b => settings.jumpToPingButton = b))));
-
-          listing.End();
-
-          IEnumerable<FloatMenuOption> ButtonChooser(Action<KeyCode?> setter)
-          {
-              yield return new FloatMenuOption(buttonOff, () => { setter(null); });
-
-              for (var btn = 0; btn < 5; btn++)
-              {
-                  var b = btn;
-                  yield return new FloatMenuOption($"Mouse {b + 3}", () => { setter(KeyCode.Mouse2 + b); });
-              }
-          }*/
     }
 
 
@@ -134,7 +108,6 @@ public static class MpSettingsWindow
         // Scroll view
         Rect viewRect = new Rect(0f, 0f, inner.width - 16f, _totalContentH > 0 ? _totalContentH : 9999f);
         Widgets.BeginScrollView(inner, ref _scrollPos, viewRect);
-
         float y = 0f;
 
         y = DrawSectionHeader(y, viewRect.width, "PLAYER");
@@ -143,8 +116,8 @@ public static class MpSettingsWindow
          "MpUsernameSetting".Translate(),
          ref settings.username,
          "MpUsernameSetting".Translate(),
-         null,
-         null,
+         null, //Description
+         null, //Preview Image
          onChange: val =>
          {
              Multiplayer.username = val;
@@ -240,6 +213,30 @@ public static class MpSettingsWindow
    "MpEnableCrossPlanetLayerPings".Translate(),
    "MpEnableCrossPlanetLayerPingsDesc".Translate(),
    null);
+
+        y = DrawButtonRow(y, viewRect.width, "MpPingLocButtonSetting".Translate(), settings.sendPingButton != null ? $"MOUSE {settings.sendPingButton - (int)KeyCode.Mouse0 + 1}" : "MpSettingOff".Translate(), "MpPingLocButtonSetting".Translate(), null, null,
+locked: false, onClick: () =>
+{
+    Find.WindowStack.Add(new FloatMenu(new List<FloatMenuOption>(ButtonChooser(b => settings.sendPingButton = b))));
+});
+
+        y = DrawButtonRow(y, viewRect.width, "MpJumpToPingButtonSetting".Translate(), settings.jumpToPingButton != null ? $"MOUSE {settings.jumpToPingButton - (int)KeyCode.Mouse0 + 1}" : "MpSettingOff".Translate(), "MpPingLocButtonSetting".Translate(), null, null,
+locked: false, onClick: () =>
+{
+    Find.WindowStack.Add(new FloatMenu(new List<FloatMenuOption>(ButtonChooser(b => settings.jumpToPingButton = b))));
+});
+
+
+        IEnumerable<FloatMenuOption> ButtonChooser(Action<KeyCode?> setter)
+        {
+            yield return new FloatMenuOption("MpSettingOff".Translate(), () => { setter(null); });
+
+            for (var btn = 0; btn < 5; btn++)
+            {
+                var b = btn;
+                yield return new FloatMenuOption($"MOUSE {b + 3}", () => { setter(KeyCode.Mouse2 + b); });
+            }
+        }
 
         y += SectionGap;
         y = DrawSectionHeader(y, viewRect.width, "DEBUG");
@@ -384,13 +381,6 @@ locked: !Prefs.DevMode);
     #endregion
 
     #region UI Utils
-    /// <summary>
-    /// Draws a tiny, colored section header label and returns the updated Y position for the next UI element.
-    /// </summary>
-    /// <param name="yPosition">The current vertical position on the canvas where the header starts.</param>
-    /// <param name="width">The total available width for the header constraint.</param>
-    /// <param name="headerText">The text string to display as the section title.</param>
-    /// <returns>The next available Y position, factoring in the header height and bottom spacing.</returns>
     private static float DrawSectionHeader(float yPosition, float width, string headerText)
     {
         Text.Font = GameFont.Tiny;
@@ -401,20 +391,6 @@ locked: !Prefs.DevMode);
         return yPosition + SectionLabelHeight + 6f;
     }
 
-    /// <summary>
-    /// Draws a custom interactive toggle (ON/OFF) row with hover-based preview handling.
-    /// Supports disabling interactions via the locked state and triggers a callback upon value changes.
-    /// </summary>
-    /// <param name="yPosition">The current vertical layout position where the row starts.</param>
-    /// <param name="width">The total available width for the row layout.</param>
-    /// <param name="labelText">The display label text for the toggle setting.</param>
-    /// <param name="value">A reference to the boolean variable being toggled.</param>
-    /// <param name="previewTitle">The title passed to the preview panel when the row is hovered.</param>
-    /// <param name="description">The descriptive text passed to the preview panel when the row is hovered.</param>
-    /// <param name="previewImage">The texture/image passed to the preview panel when the row is hovered.</param>
-    /// <param name="locked">If set to true, interaction is disabled (Useful for gating settings behind research or conditions).</param>
-    /// <param name="onChange">An optional callback action triggered immediately after the value changes, passing the new state.</param>
-    /// <returns>The next available Y position, factoring in the row height and spacing for sequential layout building.</returns>
     private static float DrawToggleRow(float yPosition, float width, string labelText, ref bool value, string previewTitle, string description, Texture2D previewImage, bool locked = false, Action<bool> onChange = null)
     {
         Rect row = new Rect(0f, yPosition, width, RowHeight);
@@ -448,7 +424,7 @@ locked: !Prefs.DevMode);
         // Label
         GUI.color = locked ? Gray(1f, 0.4f) : Color.white;
         Text.Anchor = TextAnchor.MiddleLeft;
-        Widgets.Label(new Rect(8f, yPosition + 2f, labelWidth, RowHeight - 4f), "■  " + labelText);
+        Widgets.Label(new Rect(8f, yPosition + 2f, labelWidth, RowHeight - 4f), labelText);
         Text.Anchor = TextAnchor.UpperLeft;
         GUI.color = Color.white;
 
@@ -464,7 +440,7 @@ locked: !Prefs.DevMode);
         GUI.color = locked ? (value ? Color.black : Gray(0.6f)) : Gray(0.5f);
         Text.Anchor = TextAnchor.MiddleCenter;
         Widgets.Label(new Rect(btnRect.x, btnRect.y + 1f, btnRect.width, btnRect.height),
-            value ? offLabelText : onLabelText);
+            value ? onLabelText : offLabelText);
         Text.Anchor = TextAnchor.UpperLeft;
         Text.Font = GameFont.Small;
         GUI.color = Color.white;
@@ -517,7 +493,7 @@ locked: !Prefs.DevMode);
         // Label
         GUI.color = locked ? Gray(1f, 0.4f) : Color.white;
         Text.Anchor = TextAnchor.MiddleLeft;
-        Widgets.Label(new Rect(8f, yPosition + 2f, labelWidth, RowHeight - 4f), "■  " + labelText);
+        Widgets.Label(new Rect(8f, yPosition + 2f, labelWidth, RowHeight - 4f), labelText);
         Text.Anchor = TextAnchor.UpperLeft;
         GUI.color = Color.white;
 
@@ -576,7 +552,7 @@ locked: !Prefs.DevMode);
         // Label
         GUI.color = locked ? Gray(1f, 0.4f) : Color.white;
         Text.Anchor = TextAnchor.MiddleLeft;
-        Widgets.Label(new Rect(8f, yPosition + 2f, labelWidth, RowHeight - 4f), "■  " + labelText);
+        Widgets.Label(new Rect(8f, yPosition + 2f, labelWidth, RowHeight - 4f), labelText);
         Text.Anchor = TextAnchor.UpperLeft;
         GUI.color = Color.white;
 
@@ -657,7 +633,7 @@ locked: !Prefs.DevMode);
 
         GUI.color = locked ? Gray(1f, 0.4f) : Color.white;
         Text.Anchor = TextAnchor.MiddleLeft;
-        Widgets.Label(new Rect(8f, yPosition + 2f, labelWidth, RowHeight - 4f), "■  " + labelText);
+        Widgets.Label(new Rect(8f, yPosition + 2f, labelWidth, RowHeight - 4f), labelText);
         Text.Anchor = TextAnchor.UpperLeft;
         GUI.color = Color.white;
 
